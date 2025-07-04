@@ -14,7 +14,12 @@ export const userModel = new Schema({
     password:{
         type: String,
         required:true
-    }
+    },
+    phoneNumber:{
+        type: Number,
+        required:true
+    },
+    
 });
 
 userModel.plugin(normalize);
