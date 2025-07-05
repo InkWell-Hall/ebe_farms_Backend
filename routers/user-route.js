@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.js";
-import { login, signUp } from "../controllers/user-controller.js";
+import { forgotPassword, login, signUp, verifyOtp } from "../controllers/user-controller.js";
 
 export const userRoute = Router();
 
-userRoute.post('/user',authenticate,signUp);
-userRoute.post('/user',authenticate,login);
+userRoute.post('/user/signUp',signUp);
+userRoute.post('/user/verifyOtp',verifyOtp);
+userRoute.post('/user/login',login);
+userRoute.post('/user/reset-Password',forgotPassword);
