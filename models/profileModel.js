@@ -10,7 +10,8 @@ export const profileModel = new Schema({
         required: true,
     },
     image: {
-        type: Array,
+        type: [String],
+        default:[],
         required: true
     }
 });

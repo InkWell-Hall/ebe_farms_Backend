@@ -30,6 +30,11 @@ export const farmProjectModel = new Schema({
         type: Number,
         default: 0,
     },
+    images:{
+        type:[String],
+        default:[],
+        required:true
+    },
     startDate: {
         type: Date,
         required: true,

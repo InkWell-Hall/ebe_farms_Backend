@@ -11,7 +11,7 @@ export const farmProjectJoiSchema = Joi.object({
 
     totalRequiredFunding: Joi.number().min(0).required(),
     receivedFunding: Joi.number().min(0).default(0).required(),
-
+    images: Joi.array().items(Joi.string()).min(1).required(),
     startDate: Joi.date().required(),
     endDate: Joi.date().required(),
 
