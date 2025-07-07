@@ -5,19 +5,17 @@ import { farmProjectJoiSchema } from "../schemas/farmProjectSchema.js";
 export const createFarmproject = async (req, res) => {
     try {
         const userID = req.user.id
-        // validate
-        const { error, value } = farmProjectJoiSchema.validate(req.body);
+        // Step 1: Extract image URLs
+        const imageUrls = req.files?.map(file => file.path) || [];
+
+        // Step 2: Add to the data before validating
+        const dataToValidate = { ...req.body, images: imageUrls };
+
+        // Step 3: Validate
+        const { error, value } = profileSchema.validate(dataToValidate);
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
-
-        // checks if it the same user
-        // if(userID.toString() !== value.user.toString()){
-        //     return res.status(401).json({message:'you are not authorize to create a profile'})
-        // }
-
-        // ✅ Extract image URLs from Cloudinary upload (via Multer)
-        const imageUrls = req.files?.map(file => file.path) || [];
 
         // ✅ Add imageUrls to validated data
         value.images = imageUrls;

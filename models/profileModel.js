@@ -9,7 +9,7 @@ export const profileModel = new Schema({
         ref: "User",
         required: true,
     },
-    image: {
+    images: {
         type: [String],
         default:[],
         required: true

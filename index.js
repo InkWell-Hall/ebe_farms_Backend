@@ -6,6 +6,7 @@ import { userRoute } from "./routers/user-route.js";
 import { MONGOURI, PORT } from "./config/env.js";
 import { profileRouter } from "./routers/profileRouter.js";
 import { farmProjectRouter } from "./routers/farmProjectRouter.js";
+// import connectCloudinary from "./utils/cloudinary.js";
 
 const app = express();
 
@@ -15,6 +16,8 @@ app.use('/api/V1',userRoute)
 app.use('/api/V1',profileRouter)
 app.use('/api/V1',farmProjectRouter)
 
+// connects to cloudinary
+// connectCloudinary();
 dotenv.config();
 
 await mongoose.connect(MONGOURI);

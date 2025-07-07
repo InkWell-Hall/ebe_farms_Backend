@@ -1,10 +1,11 @@
+
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../utils/cloudinary.js";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 // Multer storage using Cloudinary
 const storage = new CloudinaryStorage({
-  cloudinary,
+  cloudinary: cloudinary,
   params: {
     folder: "Ebe_Farms", // Cloudinary folder name
     allowed_formats: ["jpg", "jpeg", "png"],

@@ -5,27 +5,25 @@ import { profileSchema } from "../schemas/profileSchema.js";
 export const createProfile = async (req, res) => {
     try {
         const userID = req.user.id
-        // validate
-        const { error, value } = profileSchema.validate(req.body);
+        
+        // Step 1: Extract image URLs
+        const imageUrls = req.files?.map(file => file.path) || [];
+
+        // Step 2: Add to the data before validating
+        const dataToValidate = { ...req.body, images: imageUrls };
+
+        // Step 3: Validate
+        const { error, value } = profileSchema.validate(dataToValidate);
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
 
-        // checks if it the same user
-        if(userID.toString() !== value.user.toString()){
-            return res.status(401).json({message:'you are not authorize to create a profile'})
-        }
-
-        // ✅ Extract image URLs from Cloudinary upload (via Multer)
-        const imageUrls = req.files?.map(file => file.path) || [];
-
-        // ✅ Add imageUrls to validated data
-        value.images = imageUrls;
 
         const profile = await (
             await Profile.create({
                 ...value,
-                user: req.user.id, // Make sure you're including the user here
+                user: userID, // Make sure you're including the user here
+                images: imageUrls
             })
         ).populate("user", "-password -otp");
 
@@ -65,3 +63,36 @@ export const updateProfile = async (req, res) => {
     };
 };
 
+export const deleteProfile = async (req, res) => {
+    try {
+        const userID = req.user.id;
+        // check the id 
+        const profileID = req.params.id;
+        if (!profileID) {
+            return res.status(400).json({ message: `List ID: ${profileID}, not available` });
+        }
+        // check the availablity of that profile
+        const profile = await Profile.findById(profileID);
+        if (!profile) {
+            return res.status(400).json({ message: 'Invalid Profile' })
+        }
+        // check if list belong to the user
+        if (profile.user.toString() !== userID.toString()) {
+            return res.status(403).json({ message: 'You are not authorized to see a list for this user' })
+        }
+        // Delete a profile
+        const delProfile = await Profile.findByIdAndDelete(profileID);
+        return res.status(200).json({ message: 'Profile is deleted Successfully', deleteProfile: delProfile });
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    };
+};
+
+export const allProfile = async (req, res) => {
+    try {
+        const allProfile = await Profile.find();
+        return res.status(200).json({ message: 'All profiles available', allProfile });
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}

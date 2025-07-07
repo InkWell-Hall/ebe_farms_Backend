@@ -50,8 +50,6 @@ export const signUp = async (req, res) => {
             );
             return res.status(200).json({ message: 'User Register Successfully🎉', createAccount,token })
         }
-
-
     } catch (error) {
         return res.status(500).json({ message: error.message })
     }
@@ -73,7 +71,7 @@ export const verifyOtp = async (req, res) => {
         if (!isValidOtp) {
             return res.status(400).json({ message: 'Invalid OTP' });
         }
-
+        
         // OTP is valid, proceed with verification
         user.isVerified = true;
         user.otp = null;
