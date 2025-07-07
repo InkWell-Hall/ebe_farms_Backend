@@ -19,10 +19,7 @@ export const signUp = async (req, res) => {
         const { email, password } = value;
         // check if account exist by email, if not continue with the registration by hashing the password
         const userFinder = await User.findOne({ email })
-
         if (userFinder) {
-            const sendotpmail = await sendOtpEmail(email, otp);
-            console.log('OTP MAIL', sendotpmail)
             return res.status(400).json({ message: `User with this Email:${email} already exist` })
         } else {
             // hash password
@@ -50,7 +47,6 @@ export const signUp = async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({ message: error.message })
-
     }
 };
 
@@ -111,7 +107,7 @@ export const login = async (req, res) => {
             SECRET,
             { expiresIn: '1d' }
         );
-        return res.status(200).json({ message: 'Login Successful🎉',token,user });
+        return res.status(200).json({ message: 'Login Successful🎉', token, user });
     } catch (error) {
         return res.status(500).json({ message: error.message })
     };
@@ -187,7 +183,29 @@ export const forgotPassword = async (req, res) => {
 };
 
 
+export const resetPassword = async (req, res) => {
+    try {
+        const { error, value } = passwordResetSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
+        }
+        const { newPassword, userID } = value;
 
+        const user = await User.findById(userID);
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        user.password = hashedPassword;
+        const newPasswordData = await user.save();
+
+        return res.status(200).json({ message: 'Password reset successful',newPasswordData });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
+    }
+};
 
 // export const signUpn = async (req, res) => {
 //   try {

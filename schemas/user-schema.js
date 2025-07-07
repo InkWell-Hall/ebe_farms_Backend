@@ -15,10 +15,6 @@ export const loginSchema = Joi.object({
 });
 
 export const passwordResetSchema = Joi.object({
-    email: Joi.string().email().required().messages({
-        'string.email': 'Invalid email format',
-        'any.required': 'Email is required',
-    }),
     newPassword: Joi.string().min(8).required().messages({
         'string.min': 'Password must be at least 8 characters',
         'any.required': 'New password is required',
@@ -27,6 +23,7 @@ export const passwordResetSchema = Joi.object({
         'any.only': 'Passwords do not match',
         'any.required': 'Confirm password is required',
     }),
+    userID: Joi.string().required()
 });
 
 export const forgetPasswordSchema = Joi.object({
