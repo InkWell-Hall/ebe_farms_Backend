@@ -22,8 +22,7 @@ export const passwordResetSchema = Joi.object({
     confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required().messages({
         'any.only': 'Passwords do not match',
         'any.required': 'Confirm password is required',
-    }),
-    userID: Joi.string().required()
+    })
 });
 
 export const forgetPasswordSchema = Joi.object({

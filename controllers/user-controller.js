@@ -29,7 +29,7 @@ export const signUp = async (req, res) => {
             // otp for verification of mail
             const otp = otpGenerator(4)
             const hashotp = await bcrypt.hash(otp, 12);
-            console.log("hashotp", hashotp)
+            console.log("hashotp", hashotp,otp)
 
             // save the new user details in the database using the format below.
             const createAccount = await User.create({
@@ -42,8 +42,15 @@ export const signUp = async (req, res) => {
             // send mail
             const sendotpmail = await sendOtpEmail(email, otp);
             console.log('OTP MAIL', sendotpmail)
-            return res.status(200).json({ message: 'User Register Successfully🎉' })
+            // generate token to the user
+            const token = jwt.sign(
+                { id: createAccount.id },
+                SECRET,
+                { expiresIn: '1d' }
+            );
+            return res.status(200).json({ message: 'User Register Successfully🎉', createAccount,token })
         }
+
 
     } catch (error) {
         return res.status(500).json({ message: error.message })
@@ -52,10 +59,11 @@ export const signUp = async (req, res) => {
 
 export const verifyOtp = async (req, res) => {
     try {
-        const { otp, _id } = req.body;
+        const userID = req.user.id
+        const { otp } = req.body;
 
         // Find user with matching OTP and expiration time
-        const user = await User.findOne({ _id });
+        const user = await User.findById(userID );
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
@@ -185,12 +193,14 @@ export const forgotPassword = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
     try {
+        // getting the uerID from the token
+        const userID = req.user.id
         const { error, value } = passwordResetSchema.validate(req.body);
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
-        const { newPassword, userID } = value;
 
+        const { newPassword } = value;
         const user = await User.findById(userID);
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
@@ -200,12 +210,22 @@ export const resetPassword = async (req, res) => {
         user.password = hashedPassword;
         const newPasswordData = await user.save();
 
-        return res.status(200).json({ message: 'Password reset successful',newPasswordData });
+        return res.status(200).json({ message: 'Password reset successful', newPasswordData });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: error.message });
     }
 };
+
+export const allUser = async(req,res)=>{
+    try {
+        const alluser = await User.find();
+        return res.status(200).json({message:'All the users available',alluser});
+    } catch (error) {
+        return res.status(500).json({message:error.message})
+    }
+}
+
 
 // export const signUpn = async (req, res) => {
 //   try {
