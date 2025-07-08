@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-export const farmProjectJoiSchema = Joi.object({
+export const farmProjectSchema = Joi.object({
     projectName: Joi.string().required(),
 
     location: Joi.string().required(),
@@ -16,6 +16,5 @@ export const farmProjectJoiSchema = Joi.object({
     endDate: Joi.date().required(),
 
     isActive: Joi.boolean().default(true),
-
-    investors: Joi.array().items(Joi.string()).default([]),
+    // investors: Joi.array().items(Joi.string()).default([]),
 });

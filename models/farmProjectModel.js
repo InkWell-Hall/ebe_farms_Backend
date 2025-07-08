@@ -47,12 +47,12 @@ export const farmProjectModel = new Schema({
         type: Boolean,
         default: true,
     },
-    investors: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: "Investment",
-        },
-    ],
+    // investors: [
+    //     {
+    //         type: Schema.Types.ObjectId,
+    //         ref: "Investment",
+    //     },
+    // ],
 });
 
 farmProjectModel.plugin(normalize);

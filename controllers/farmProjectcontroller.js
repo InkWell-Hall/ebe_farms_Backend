@@ -1,5 +1,5 @@
 import { FarmProject } from "../models/farmProjectModel.js";
-import { farmProjectJoiSchema } from "../schemas/farmProjectSchema.js";
+import { farmProjectSchema } from "../schemas/farmProjectSchema.js";
 
 
 export const createFarmproject = async (req, res) => {
@@ -12,7 +12,7 @@ export const createFarmproject = async (req, res) => {
         const dataToValidate = { ...req.body, images: imageUrls };
 
         // Step 3: Validate
-        const { error, value } = profileSchema.validate(dataToValidate);
+        const { error, value } = farmProjectSchema.validate(dataToValidate);
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
@@ -25,7 +25,7 @@ export const createFarmproject = async (req, res) => {
             // user: req.user.id, // Make sure you're including the user here
         })//.populate("investor", "-password -otp");
 
-        return res.status(201).json({ message: "Farm Project has been created succesfully", profile });
+        return res.status(201).json({ message: "Farm Project has been created succesfully", farm });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
