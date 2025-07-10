@@ -3,17 +3,23 @@ import { paystack } from "../middleware/paystack.js";
 import { Investment } from "../models/investmentModel.js";
 import { Investor } from "../models/investorModel.js";
 import { Payment } from "../models/paymentModel.js";
+import { User } from "../models/user-model.js";
 import { paymentSchema } from "../schemas/paymentSchema.js";
 
 export const initializePayment = async (req, res) => {
     try {
-        const userEmail = req.user.email;
-        if (!userEmail) {
+        const userID = req.user.id;
+        if (!userID) {
             return res.status(401).json({
                 success: false,
                 message: "Unauthorized access"
             });
         }
+        const user = await User.findById(userID);
+        if (!user) {
+            return res.status(404).json({ message: "user profile not found" });
+        }
+
         const { error, value } = paymentSchema.validate(req.body);
         if (error) {
             return res.status(400).json({ message: error.details[0].message })
@@ -22,7 +28,7 @@ export const initializePayment = async (req, res) => {
         const { amount } = value;
 
         const response = await paystack.post('/transaction/initialize', {
-            email: userEmail,// user's email
+            email: user.email,// user's email
             amount: amount * 100, // amount in pesewas (e.g. 10 GHS = 1000)
             currency: "GHS"
         });

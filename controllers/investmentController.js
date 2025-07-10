@@ -49,17 +49,21 @@ export const createInvestment = async (req, res) => {
         }
         // Create the investment
         const newInvestment = await Investment.create({
-            investor: investor.id,
             farmProject,
             amountInvested,
             expectedROI,
             totalReturn,
+            investor: investor.id,
             dateOfInvestment: new Date(),
         });
 
         // Update investor with this investment
         investor.investments.push(newInvestment.id);
         await investor.save();
+
+        // Update farm project with this investor
+        project.investors.push(investor.id);
+        await project.save();
 
         // Update project's received funding
         project.receivedFunding += amountInvested;
@@ -84,12 +88,13 @@ export const createInvestment = async (req, res) => {
 export const allinvestment = async (req, res) => {
     try {
         // Fetch all investors from the database with user details
-        const investment = await Investment.find();
-        // Populate the user field, excluding the password
-        const populatedInvestment = await investment.populate("investor", "user").populate("farmProject")
+        const investment = await Investment.find().populate("investor", "user").populate("farmProject");
+        if (investment.length === 0) {
+            return res.status(404).json({ message: "No investments found" });
+        }
         return res.status(200).json({
             message: 'All Investors available',
-            investment: populatedInvestment
+            investment
         });
     } catch (error) {
         return res.status(500).json({ message: error.message })
@@ -111,33 +116,34 @@ export const userInvestment = async (req, res) => {
 
         // Find and populate all investments by that investor
         const investments = await Investment.find({ investor: investor.id })
+            .populate("farmProject")
             .populate({
                 path: "investor",
                 populate: {
                     path: "user",
                     select: "-password -otp -otpExpiresAt"
-                }
-            })
-            .populate("farmProject");
+                },
+                select: "-investments"
+            });
 
-        if (investments.length === 0) {
-            return res.status(404).json({ message: "No investments found for this user" });
-        }
+if (investments.length === 0) {
+    return res.status(404).json({ message: "No investments found for this user" });
+}
 
-        // ✅ Calculate total amount invested
-        const totalInvested = investments.reduce((sum, investment) => {
-            return sum + investment.amountInvested;
-        }, 0);
+// ✅ Calculate total amount invested
+const totalInvested = investments.reduce((sum, investment) => {
+    return sum + investment.amountInvested;
+}, 0);
 
-        return res.status(200).json({
-            message: "All investments for this user",
-            totalInvested,
-            investments,
-        });
+return res.status(200).json({
+    message: "All investments for this user",
+    totalInvested,
+    investments,
+});
 
     } catch (error) {
-        return res.status(500).json({ message: error.message });
-    }
+    return res.status(500).json({ message: error.message });
+}
 };
 
 
@@ -150,14 +156,15 @@ export const singleinvestment = async (req, res) => {
 
         // find investor by ID and populate user and investments
         const investment = await Investment.findById(investmentID)
+            .populate("farmProject")
             .populate({
                 path: "investor",
                 populate: {
                     path: "user",
                     select: "-password -otp -otpExpiresAt"
-                }
-            })
-            .populate("farmProject");
+                },
+                select: "-investments"
+            });
 
         if (!investment) {
             return res.status(400).json({ message: 'Investment does not exist' })

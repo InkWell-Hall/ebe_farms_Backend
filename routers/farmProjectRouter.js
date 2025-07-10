@@ -8,7 +8,7 @@ export const farmProjectRouter = Router();
 farmProjectRouter.post('/farmProjects',authenticate,multipleImages,createFarmproject)
 farmProjectRouter.post('/farmProjects/:id',authenticate,closeFarmProject)
 farmProjectRouter.get('/farmProjects/:id',authenticate,singleFarmProject)
-farmProjectRouter.get('/farmProjects',authenticate,allFarmProject) 
+farmProjectRouter.get('/farmProjects',allFarmProject) 
 farmProjectRouter.get('/user/farmProjects/:id',authenticate,userFarmproject) 
 farmProjectRouter.put('/farmProjects/:id',authenticate,updateFarmproject) 
 farmProjectRouter.delete('/farmProjects/:id',authenticate,deleteFarmproject) 

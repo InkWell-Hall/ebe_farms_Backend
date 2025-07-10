@@ -6,6 +6,6 @@ import { multipleImages } from "../middleware/uplodFiles.js";
 export const profileRouter = Router();
 
 profileRouter.post('/profile',authenticate, multipleImages ,createProfile)
-profileRouter.post('/profile',authenticate,updateProfile)
+profileRouter.put('/profile/:id',authenticate,updateProfile)
 profileRouter.get('/profile',authenticate,allProfile) // for admins
-profileRouter.delete('/profile',authenticate,deleteProfile) // for admins
+profileRouter.delete('/profile/:id',authenticate,deleteProfile) // for admins

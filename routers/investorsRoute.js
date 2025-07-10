@@ -5,6 +5,6 @@ import { allinvestors, createInvestor, deleteInvestor,singleinvestor } from "../
 export const investorRouter = Router();
 
 investorRouter.post('/investors',authenticate,createInvestor)
-investorRouter.get('/investors',authenticate,allinvestors) // for admins
+investorRouter.get('/investors',allinvestors) // for admins
 investorRouter.get('/investors/:id',authenticate, singleinvestor) // for admins
 investorRouter.delete('/investors',authenticate,deleteInvestor) // for admins

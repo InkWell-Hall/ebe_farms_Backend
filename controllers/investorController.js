@@ -1,9 +1,11 @@
 import { Investor } from "../models/investorModel.js";
+import { User } from "../models/user-model.js";
 import { investorSchema } from "../schemas/investorSchema.js";
 
 export const createInvestor = async (req, res) => {
     try {
         const userID = req.user.id;
+        const userVerify = req.user.isVerified;
         // Validate the request body against the schema
         const { error, value } = investorSchema.validate(req.body);
         if (error) {
@@ -12,6 +14,16 @@ export const createInvestor = async (req, res) => {
 
         if (!userID) {
             return res.status(400).json({ message: "Unauthorize" });
+        }
+
+        const user = await User.findById(userID)
+        if (!user) {
+            return res.status(400).json({ message: "User not found" });
+        }
+
+        // check if the user is verified
+        if (!user.isVerified) {
+            return res.status(403).json({ message: "You need to verify your account before creating an investor profile" });
         }
 
         // Check if the user already has an investor profile
@@ -24,10 +36,16 @@ export const createInvestor = async (req, res) => {
         const newInvestor = await Investor.create({
             ...value,
             user: userID
-        }).populate("user", "-password -otp -otpExpiresAt").populate("investments");
+        });
+
+        // to populate we need to find the investor by ID and populate the user and investments fields sice we cant do it with the create method.
+        const populatedInvestor = await Investor.findById(newInvestor.id)
+            .populate({ path: "user", select: "-password -otp -otpExpiresAt" })
+            .populate("investments");
+
         return res.status(201).json({
             message: "Investor created successfully",
-            investor: newInvestor
+            investor: populatedInvestor
         });
 
     } catch (error) {
@@ -39,12 +57,11 @@ export const createInvestor = async (req, res) => {
 export const allinvestors = async (req, res) => {
     try {
         // Fetch all investors from the database with user details
-        const investors = await Investor.find();
-        // Populate the user field, excluding the password
-        const populatedInvestor = await investors.populate("user", "-password -otp -otpExpiresAt")
+        const investors = await Investor.find().populate("user", "-password -otp -otpExpiresAt");
+        
         return res.status(200).json({
             message: 'All Investors available',
-            investors: populatedInvestor
+            investors: investors
         });
     } catch (error) {
         return res.status(500).json({ message: error.message })

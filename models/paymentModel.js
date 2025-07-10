@@ -13,7 +13,7 @@ export const paymentModel = new Schema({
     },
     method: {
         type: String,
-        enum: ["mobile money", "bank transfer", "card"],
+        enum: ["mobile_money", "bank_transfer", "card"],
         required: true,
     },
     status: {

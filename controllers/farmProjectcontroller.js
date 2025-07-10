@@ -51,18 +51,11 @@ export const singleFarmProject = async (req, res) => {
 
 export const allFarmProject = async (req, res) => {
     try {
-        // we set limit to toa page(pagination)
-        const page = req.query.page || 1;
-        const limit = req.query.limit || 10;
-        const skip = (page - 1) * limit;
-
         // search find all farm project with a limit of 10 per a page
-        const farm = await FarmProject.find().skip(skip).limit(limit);
+        const farm = await FarmProject.find();
 
         // total count of all the farm project
-        const totalCount = await TodoList.countDocuments({});
-        // this gives a number of list (10) to a page
-        const totalPages = Math.ceil(totalCount / limit);
+        const totalCount = await FarmProject.countDocuments({});
 
         // return a message if there is no list
         if (farm.length == 0) {
@@ -72,11 +65,7 @@ export const allFarmProject = async (req, res) => {
         return res.status(200).json({
             message: 'Your Farm Project',
             farm,
-            pagination: {
-                currentPage: page,
-                totalPages,
-                totalCount,
-            },
+            totalCount,
         });
     } catch (error) {
         return res.status(500).json({ message: error.message })
@@ -229,6 +218,7 @@ export const userFarmproject = async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 };
+
 
 export const closeFarmProject = async (req, res) => {
   try {
