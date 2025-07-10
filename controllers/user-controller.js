@@ -29,7 +29,7 @@ export const signUp = async (req, res) => {
             // otp for verification of mail
             const otp = otpGenerator(4)
             const hashotp = await bcrypt.hash(otp, 12);
-            console.log("hashotp", hashotp,otp)
+            console.log("hashotp", hashotp, otp)
 
             // save the new user details in the database using the format below.
             const createAccount = await User.create({
@@ -48,12 +48,43 @@ export const signUp = async (req, res) => {
                 SECRET,
                 { expiresIn: '1d' }
             );
-            return res.status(200).json({ message: 'User Register Successfully🎉', createAccount,token })
+            return res.status(200).json({ message: 'User Register Successfully🎉', createAccount, token })
         }
     } catch (error) {
         return res.status(500).json({ message: error.message })
     }
 };
+
+export const resendOtp = async (req, res) => {
+    try {
+        const userID = req.user.id;
+        if (!userID) {
+            return res.status(400).json({ message: 'not authorize' })
+        }
+
+        const user = await User.findById(userID);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const otp = otpGenerator(4)
+        const hashotp = await bcrypt.hash(otp, 12);
+        console.log("hashotp", hashotp, otp)
+
+        // Update user's OTP and expiration time
+        user.otp = hashotp;
+        user.otpExpiresAt = Date.now() + 300000; // 5 minutes from now
+        const updatedUser = await user.save();
+        console.log('Updated User', updatedUser)
+        // Send OTP email
+        const sendotpmail = await sendOtpEmail(user.email, otp);
+        console.log('OTP MAIL', sendotpmail)
+        return res.status(200).json({ message: 'OTP resent successfully', updatedUser });
+        
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+
+    }
+}
 
 export const verifyOtp = async (req, res) => {
     try {
@@ -61,7 +92,7 @@ export const verifyOtp = async (req, res) => {
         const { otp } = req.body;
 
         // Find user with matching OTP and expiration time
-        const user = await User.findById(userID );
+        const user = await User.findById(userID);
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
@@ -71,7 +102,7 @@ export const verifyOtp = async (req, res) => {
         if (!isValidOtp) {
             return res.status(400).json({ message: 'Invalid OTP' });
         }
-        
+
         // OTP is valid, proceed with verification
         user.isVerified = true;
         user.otp = null;
@@ -215,12 +246,12 @@ export const resetPassword = async (req, res) => {
     }
 };
 
-export const allUser = async(req,res)=>{
+export const allUser = async (req, res) => {
     try {
         const alluser = await User.find();
-        return res.status(200).json({message:'All the users available',alluser});
+        return res.status(200).json({ message: 'All the users available', alluser });
     } catch (error) {
-        return res.status(500).json({message:error.message})
+        return res.status(500).json({ message: error.message })
     }
 }
 

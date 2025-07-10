@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { allUser, forgotPassword, login, resetPassword, signUp, verifyOtp } from "../controllers/user-controller.js";
+import { allUser, forgotPassword, login, resendOtp, resetPassword, signUp, verifyOtp } from "../controllers/user-controller.js";
 import { authenticate } from "../middleware/auth.js";
 
 export const userRoute = Router();
 
 userRoute.post('/user/signUp',signUp);
 userRoute.post('/user/verifyOtp',authenticate,verifyOtp);
+userRoute.post('/user/resendOtp',authenticate,resendOtp);
 userRoute.post('/user/login',login);
 userRoute.post('/user/reset-Password',forgotPassword);
 userRoute.post('/user/newPassword',authenticate,resetPassword);
