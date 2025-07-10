@@ -8,6 +8,7 @@ import { profileRouter } from "./routers/profileRouter.js";
 import { farmProjectRouter } from "./routers/farmProjectRouter.js";
 import { investorRouter } from "./routers/investorsRoute.js";
 import { investmentRouter } from "./routers/investmentRouter.js";
+import { paymentRouter } from "./routers/paymentRouter.js";
 // import connectCloudinary from "./utils/cloudinary.js";
 
 const app = express();
@@ -19,6 +20,7 @@ app.use('/api/V1',profileRouter)
 app.use('/api/V1',farmProjectRouter)
 app.use('/api/V1',investorRouter)
 app.use('/api/V1',investmentRouter)
+app.use('/api/V1',paymentRouter)
 
 // connects to cloudinary
 // connectCloudinary();

@@ -16,5 +16,5 @@ export const farmProjectSchema = Joi.object({
     endDate: Joi.date().required(),
 
     isActive: Joi.boolean().default(true),
-    // investors: Joi.array().items(Joi.string()).default([]),
+    investors: Joi.array().items(Joi.string()).default([]),
 });

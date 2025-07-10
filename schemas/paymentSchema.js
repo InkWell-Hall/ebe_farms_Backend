@@ -1,14 +1,15 @@
 import Joi from "joi";
 
-export const paymentJoiSchema = Joi.object({
+export const paymentSchema = Joi.object({
     investmentId: Joi.string().required(),
 
     amount: Joi.number().min(0).required(),
 
     method: Joi.string()
-        .valid("mobile money", "bank transfer", "card", "cash")
+        .valid("mobile money", "bank transfer", "card")
         .required(),
-    date: Joi.date().default(() => new Date(), 'current date'),
+    date: Joi.date().default(() => new Date()),
 
     transactionId: Joi.string(),
 });
+

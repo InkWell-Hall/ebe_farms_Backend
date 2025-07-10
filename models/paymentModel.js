@@ -13,8 +13,13 @@ export const paymentModel = new Schema({
     },
     method: {
         type: String,
-        enum: ["mobile money", "bank transfer", "card", "cash"],
+        enum: ["mobile money", "bank transfer", "card"],
         required: true,
+    },
+    status: {
+    type: String,
+    enum: ["pending", "success", "failed"],
+    default: "pending"
     },
     date: {
         type: Date,
