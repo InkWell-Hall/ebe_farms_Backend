@@ -184,46 +184,75 @@ export const deleteFarmproject = async (req, res) => {
 // };
 
 export const userFarmproject = async (req, res) => {
+    try {
+        const farmProjectID = req.params.id;
+        if (!farmProjectID) {
+            return res.status(400).json({ message: "Farm Project ID not provided" });
+        }
+
+        // Check if farm project exists
+        const farm = await FarmProject.findById(farmProjectID);
+        if (!farm) {
+            return res.status(404).json({ message: "Farm project not found" });
+        }
+
+        // Get all investments for this farm
+        const investments = await Investment.find({ farmProject: farmProjectID });
+
+        if (investments.length === 0) {
+            return res.status(404).json({ message: "No investments found for this farm project" });
+        }
+
+        // Extract unique investor IDs from investments
+        const uniqueInvestorIds = [
+            ...new Set(investments.map((investment) => investment.investor.toString()))
+        ];
+
+        // Fetch those investors and populate the user
+        const investors = await Investor.find({ _id: { $in: uniqueInvestorIds } })
+            .populate({
+                path: "user",
+                select: "-password -otp -otpExpiresAt"
+            });
+
+        // Optional: total amount invested
+        const totalInvested = investments.reduce((sum, investment) => sum + investment.amountInvested, 0);
+
+        return res.status(200).json({
+            message: "investors for this farm project",
+            totalInvested,
+            totalInvestors: investors.length,// count the number investors who invested in that farm project
+            investors
+        });
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+export const closeFarmProject = async (req, res) => {
   try {
     const farmProjectID = req.params.id;
+
     if (!farmProjectID) {
       return res.status(400).json({ message: "Farm Project ID not provided" });
     }
 
-    // Check if farm project exists
     const farm = await FarmProject.findById(farmProjectID);
+
     if (!farm) {
       return res.status(404).json({ message: "Farm project not found" });
     }
 
-    // Get all investments for this farm
-    const investments = await Investment.find({ farmProject: farmProjectID });
-
-    if (investments.length === 0) {
-      return res.status(404).json({ message: "No investments found for this farm project" });
+    if (Number(farm.receivedFunding) < Number(farm.totalRequiredFunding)) {
+      return res.status(400).json({ message: "Farm project is still available for funding" });
     }
 
-    // Extract unique investor IDs from investments
-    const uniqueInvestorIds = [
-      ...new Set(investments.map((investment) => investment.investor.toString()))
-    ];
+    // Close the project
+    farm.isActive = false;
+    await farm.save();
 
-    // Fetch those investors and populate the user
-    const investors = await Investor.find({ _id: { $in: uniqueInvestorIds } })
-      .populate({
-        path: "user",
-        select: "-password -otp -otpExpiresAt"
-      });
-
-    // Optional: total amount invested
-    const totalInvested = investments.reduce((sum, investment) => sum + investment.amountInvested, 0);
-
-    return res.status(200).json({
-      message: "investors for this farm project",
-      totalInvested,
-      totalInvestors: investors.length,// count the number investors who invested in that farm project
-      investors
-    });
+    return res.status(200).json({ message: "Farm project closed successfully", farm });
 
   } catch (error) {
     return res.status(500).json({ message: error.message });

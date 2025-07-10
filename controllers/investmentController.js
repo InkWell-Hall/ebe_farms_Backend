@@ -20,7 +20,7 @@ export const createInvestment = async (req, res) => {
         }
 
         // details needed in the body to create an investment
-        const { farmProject, amountInvested, expectedROI } = value;
+        const { farmProject, amountInvested } = value;
 
         // find the investor whoes user field matches the authenticated user
         const investor = await Investor.findOne({ user: userID });
@@ -34,12 +34,26 @@ export const createInvestment = async (req, res) => {
             return res.status(404).json({ message: "Farm project not found" });
         }
 
+        // Check if the project is still active
+        if (project.isActive === false) {
+            return res.status(400).json({ message: "Farm project is closed, choose a different project" });
+        }
+
+        // ROI Calculations.....total amount invested plus expected return on investment
+        const expectedROI = amountInvested * 0.20; // 20%
+        const totalReturn = amountInvested + expectedROI;
+
+        // Check for overfunding
+        if (project.receivedFunding + amountInvested > project.totalRequiredFunding) {
+            return res.status(400).json({ message: "Investment exceeds required funding for this farm project" });
+        }
         // Create the investment
         const newInvestment = await Investment.create({
             investor: investor.id,
             farmProject,
             amountInvested,
             expectedROI,
+            totalReturn,
             dateOfInvestment: new Date(),
         });
 

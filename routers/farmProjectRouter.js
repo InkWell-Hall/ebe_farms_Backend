@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
-import { allFarmProject, createFarmproject, deleteFarmproject, singleFarmProject, updateFarmproject, userFarmproject } from "../controllers/farmProjectcontroller.js";
+import { allFarmProject, closeFarmProject, createFarmproject, deleteFarmproject, singleFarmProject, updateFarmproject, userFarmproject } from "../controllers/farmProjectcontroller.js";
 import { multipleImages } from "../middleware/uplodFiles.js";
 
 export const farmProjectRouter = Router();
 
 farmProjectRouter.post('/farmProjects',authenticate,multipleImages,createFarmproject)
+farmProjectRouter.post('/farmProjects/:id',authenticate,closeFarmProject)
 farmProjectRouter.get('/farmProjects/:id',authenticate,singleFarmProject)
 farmProjectRouter.get('/farmProjects',authenticate,allFarmProject) 
 farmProjectRouter.get('/user/farmProjects/:id',authenticate,userFarmproject) 
