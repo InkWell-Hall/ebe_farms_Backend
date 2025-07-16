@@ -5,13 +5,28 @@ export const userSchema = Joi.object({
     userName: Joi.string().required(),
     email: Joi.string().required(),
     password: Joi.string().required(),
-    phoneNumber: Joi.string().required()
+    phoneNumber: Joi.string().required(),
+});
+
+export const adminSchema = Joi.object({
+    userName: Joi.string().required(),
+    email: Joi.string().required(),
+    password: Joi.string().required(),
+    phoneNumber: Joi.string().required(),
+    adminCode:  Joi.string().required(),
 });
 
 export const loginSchema = Joi.object({
     email: Joi.string().required(),
     password: Joi.string().required(),
     confirmPassword: Joi.string().valid(Joi.ref('password')).required().strip(), //.strip() removes confirm Password from output after validation
+});
+
+export const adminloginSchema = Joi.object({
+    email: Joi.string().required(),
+    password: Joi.string().required(),
+    confirmPassword: Joi.string().valid(Joi.ref('password')).required().strip(), //.strip() removes confirm Password from output after validation
+    adminCode: Joi.string().required(),
 });
 
 export const passwordResetSchema = Joi.object({

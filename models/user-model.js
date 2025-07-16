@@ -19,6 +19,9 @@ export const userModel = new Schema({
         type: String, // Changed to String to accommodate international phone number formats
         required: true,
     },
+    adminCode:{
+        type: String,
+    },
     otp: {
         type: String,
     },
