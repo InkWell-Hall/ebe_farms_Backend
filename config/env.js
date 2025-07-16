@@ -20,4 +20,4 @@ export const PayStack_Test_Secret_Key = process.env.PayStack_Test_Secret_Key
 export const PayStack_Test_Public_Key = process.env.PayStack_Test_Public_Key
 
 // admin code
-export const adminVerify = process.env.adminCode
+export const adminVerify = process.env.adminCode || "admin5008"
