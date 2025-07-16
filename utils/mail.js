@@ -148,7 +148,7 @@ Thank you for shopping with us!`,
   }
 }
 
-export const sendForgetPasswordEmail = async (email, passwordResetLink) => {
+export const sendForgetPasswordOTP = async (email, otp) => {
   try {
     const info = await transporter.sendMail({
       from: SMTP_USER,
@@ -215,10 +215,8 @@ export const sendForgetPasswordEmail = async (email, passwordResetLink) => {
             <div class="content">
               <p>Hello,</p>
               <p>We received a request to reset your password. If you didn't request this, please ignore this email.</p>
-              <p>To reset your password, click the link below:</p>
-              <a href="${passwordResetLink}" class="button">Reset Password</a>
-              <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-              <p>${passwordResetLink}</p>
+              <p>To reset your password, Enter the OTP below:</p>
+              <p>${otp}</p>
               <p>Best regards,</p>
               <p>Your App Team</p>
             </div>

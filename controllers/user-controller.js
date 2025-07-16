@@ -5,7 +5,7 @@ import { User } from '../models/user-model.js';
 import { adminVerify, CLIENT_URL, SECRET } from '../config/env.js';
 import crypto from 'crypto';
 import { otpGenerator } from '../utils/additionals.js';
-import { sendForgetPasswordEmail, sendOtpEmail } from '../utils/mail.js';
+import { sendForgetPasswordOTP, sendOtpEmail } from '../utils/mail.js';
 
 
 export const signUp = async (req, res) => {
@@ -65,8 +65,8 @@ export const adminsignUp = async (req, res) => {
 
         const { email, password, adminCode } = value;
         // check if the admin code is correct
-        if(adminCode !== adminVerify){
-            return res.status(400).json({message:'wrong admin code'})
+        if (adminCode !== adminVerify) {
+            return res.status(400).json({ message: 'wrong admin code' })
         }
         // check if account exist by email, if not continue with the registration by hashing the password
         const userFinder = await User.findOne({ email })
@@ -130,7 +130,7 @@ export const resendOtp = async (req, res) => {
         const sendotpmail = await sendOtpEmail(user.email, otp);
         console.log('OTP MAIL', sendotpmail)
         return res.status(200).json({ message: 'OTP resent successfully', updatedUser });
-        
+
     } catch (error) {
         return res.status(500).json({ message: error.message });
 
@@ -209,9 +209,9 @@ export const adminlogin = async (req, res) => {
         };
 
         const { email, password, adminCode } = value;
-         // check if the admin code is correct
-        if(adminCode !== adminVerify){
-            return res.status(400).json({message:'wrong admin code'})
+        // check if the admin code is correct
+        if (adminCode !== adminVerify) {
+            return res.status(400).json({ message: 'wrong admin code' })
         }
         // check if account exist by email
         const user = await User.findOne({ email });
@@ -282,57 +282,82 @@ export const forgotPassword = async (req, res) => {
             return res.status(400).json({ message: error.details[0].message });
         }
 
-        const user = await User.findOne({ email: value.email });
+        const { email } = value;
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
         }
 
-        const token = crypto.randomBytes(32).toString('hex');
-        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        // otp for verification of mail
+        const otp = otpGenerator(4)
+        const hashotp = await bcrypt.hash(otp, 12);
+        console.log("hashotp", hashotp, otp)
 
-        await User.findByIdAndUpdate(user.id, {
-            resetPasswordToken: hashedToken,
-            resetPasswordExpires: Date.now() + 3600000, // expires in 1 hour
-        });
+        // save the new user details in the database using the format below.
 
-        const { email } = value;
-        const passwordResetLink = `${CLIENT_URL}/reset-password/${token}`;
+        user.otp = hashotp,
+            user.otpExpiresAt = Date.now() + 300000
+        await user.save();
 
-        const sentmail = await sendForgetPasswordEmail(email, passwordResetLink);
-        console.log('Sent forget Password link', sentmail);
-        return res.status(200).json({ message: 'Password reset link sent to your email' });
+        await sendForgetPasswordOTP(email, otp);
+        // generate token to the user
+        // const token = jwt.sign(
+        //     { id: user.id },
+        //     SECRET,
+        //     { expiresIn: '1d' }
+        // );
+
+        return res.status(200).json({ message: 'Password OTP sent to your email'});
+
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: error.message });
+        console.error('Forgot Password Error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
-
 export const resetPassword = async (req, res) => {
     try {
-        // getting the uerID from the token
-        // const userID = req.user.id
         const { error, value } = passwordResetSchema.validate(req.body);
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
 
-        const { newPassword, email } = value;
-        const user = await User.findOne({email});
+        const { email, otp, newPassword } = value;
+
+        // Find user by email + OTP not expired
+        const user = await User.findOne({
+            email,
+            otpExpiresAt: { $gt: Date.now() }
+        });
+
         if (!user) {
-            return res.status(400).json({ message: 'User not found' });
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 12);
-        user.password = hashedPassword;
-        const newPasswordData = await user.save();
+        // Compare OTP
+        const isValidOtp = await bcrypt.compare(otp, user.otp);
+        if (!isValidOtp) {
+            return res.status(400).json({ message: 'Incorrect OTP' });
+        }
 
-        return res.status(200).json({ message: 'Password reset successful', newPasswordData });
+        // Hash and update password
+        user.password = await bcrypt.hash(newPassword, 12);
+        user.otp = undefined;
+        user.otpExpiresAt = undefined;
+
+        const updatedUser = await user.save();
+
+        return res.status(200).json({
+            message: 'Password reset successful',
+            user: updatedUser
+        });
+
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: error.message });
+        console.error('Reset Password Error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 export const allUser = async (req, res) => {
     try {
