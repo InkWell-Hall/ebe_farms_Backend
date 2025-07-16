@@ -19,17 +19,18 @@ export const adminSchema = Joi.object({
 export const loginSchema = Joi.object({
     email: Joi.string().required(),
     password: Joi.string().required(),
-    confirmPassword: Joi.string().valid(Joi.ref('password')).required().strip(), //.strip() removes confirm Password from output after validation
+    // confirmPassword: Joi.string().valid(Joi.ref('password')).required().strip(), //.strip() removes confirm Password from output after validation
 });
 
 export const adminloginSchema = Joi.object({
     email: Joi.string().required(),
     password: Joi.string().required(),
-    confirmPassword: Joi.string().valid(Joi.ref('password')).required().strip(), //.strip() removes confirm Password from output after validation
+    // confirmPassword: Joi.string().valid(Joi.ref('password')).required().strip(), //.strip() removes confirm Password from output after validation
     adminCode: Joi.string().required(),
 });
 
 export const passwordResetSchema = Joi.object({
+    email: Joi.string().email().required(),
     newPassword: Joi.string().min(8).required().messages({
         'string.min': 'Password must be at least 8 characters',
         'any.required': 'New password is required',

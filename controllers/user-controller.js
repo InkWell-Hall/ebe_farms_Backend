@@ -311,14 +311,14 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
     try {
         // getting the uerID from the token
-        const userID = req.user.id
+        // const userID = req.user.id
         const { error, value } = passwordResetSchema.validate(req.body);
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
 
-        const { newPassword } = value;
-        const user = await User.findById(userID);
+        const { newPassword, email } = value;
+        const user = await User.findOne({email});
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
         }

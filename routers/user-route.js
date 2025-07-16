@@ -11,5 +11,5 @@ userRoute.post('/user/resendOtp',authenticate,resendOtp);
 userRoute.post('/user/login',login);
 userRoute.post('/user/adminlogin',adminlogin);
 userRoute.post('/user/reset-Password',forgotPassword);
-userRoute.post('/user/newPassword',authenticate,resetPassword);
+userRoute.post('/user/newPassword',resetPassword);
 userRoute.get('/user',allUser);
