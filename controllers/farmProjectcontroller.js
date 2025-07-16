@@ -220,31 +220,31 @@ export const userFarmproject = async (req, res) => {
 };
 
 
-export const closeFarmProject = async (req, res) => {
-  try {
-    const farmProjectID = req.params.id;
+// export const closeFarmProject = async (req, res) => {
+//   try {
+//     const farmProjectID = req.params.id;
 
-    if (!farmProjectID) {
-      return res.status(400).json({ message: "Farm Project ID not provided" });
-    }
+//     if (!farmProjectID) {
+//       return res.status(400).json({ message: "Farm Project ID not provided" });
+//     }
 
-    const farm = await FarmProject.findById(farmProjectID);
+//     const farm = await FarmProject.findById(farmProjectID);
 
-    if (!farm) {
-      return res.status(404).json({ message: "Farm project not found" });
-    }
+//     if (!farm) {
+//       return res.status(404).json({ message: "Farm project not found" });
+//     }
 
-    if (Number(farm.receivedFunding) < Number(farm.totalRequiredFunding)) {
-      return res.status(400).json({ message: "Farm project is still available for funding" });
-    }
+//     if (Number(farm.receivedFunding) < Number(farm.totalRequiredFunding)) {
+//       return res.status(400).json({ message: "Farm project is still available for funding" });
+//     }
 
-    // Close the project
-    farm.isActive = false;
-    await farm.save();
+//     // Close the project
+//     farm.isActive = false;
+//     await farm.save();
 
-    return res.status(200).json({ message: "Farm project closed successfully", farm });
+//     return res.status(200).json({ message: "Farm project closed successfully", farm });
 
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
+//   } catch (error) {
+//     return res.status(500).json({ message: error.message });
+//   }
+// };

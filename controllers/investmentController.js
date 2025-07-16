@@ -69,6 +69,13 @@ export const createInvestment = async (req, res) => {
         project.receivedFunding += amountInvested;
         await project.save();
 
+        if (Number(project.receivedFunding) === Number(project.totalRequiredFunding)) {
+            return res.status(400).json({ message: "Received Maximum funding for this project" });
+        }
+        // Close the project
+        project.isActive = false;
+        await project.save();
+
         // Populate and return the full investment
         const populatedInvestment = await Investment.findById(newInvestment.id)
             .populate("investor", "user")
@@ -126,24 +133,24 @@ export const userInvestment = async (req, res) => {
                 select: "-investments"
             });
 
-if (investments.length === 0) {
-    return res.status(404).json({ message: "No investments found for this user" });
-}
+        if (investments.length === 0) {
+            return res.status(404).json({ message: "No investments found for this user" });
+        }
 
-// ✅ Calculate total amount invested
-const totalInvested = investments.reduce((sum, investment) => {
-    return sum + investment.amountInvested;
-}, 0);
+        // ✅ Calculate total amount invested
+        const totalInvested = investments.reduce((sum, investment) => {
+            return sum + investment.amountInvested;
+        }, 0);
 
-return res.status(200).json({
-    message: "All investments for this user",
-    totalInvested,
-    investments,
-});
+        return res.status(200).json({
+            message: "All investments for this user",
+            totalInvested,
+            investments,
+        });
 
     } catch (error) {
-    return res.status(500).json({ message: error.message });
-}
+        return res.status(500).json({ message: error.message });
+    }
 };
 
 
