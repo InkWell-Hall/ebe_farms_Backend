@@ -1,53 +1,124 @@
 // controllers/paymentController.js
 import { paystack } from "../middleware/paystack.js";
+import { FarmProject } from "../models/farmProjectModel.js";
 import { Investment } from "../models/investmentModel.js";
 import { Investor } from "../models/investorModel.js";
 import { Payment } from "../models/paymentModel.js";
 import { User } from "../models/user-model.js";
 import { paymentSchema } from "../schemas/paymentSchema.js";
 
+// export const initializePayment = async (req, res) => {
+//     try {
+//         const userID = req.user.id;
+//         if (!userID) {
+//             return res.status(401).json({
+//                 success: false,
+//                 message: "Unauthorized access"
+//             });
+//         }
+//         const user = await User.findById(userID);
+//         if (!user) {
+//             return res.status(404).json({ message: "user profile not found" });
+//         }
+//         const investor = await Investor.findOne({user:user._id})
+//         if(!investor){
+//             return res.status(400).json({message:'Investor not found'})
+//         }
+//         const farmproject = await FarmProject.findOne({investors:investor._id})
+//         if(!farmproject){
+//             return res.status(400).json({message:'Farmproject Not available'})
+//         }
+//         const investment = await Investment.findOne({farmProject:farmproject._id})
+//         if(!investment){
+//             return res.status(400).json({message:'Investment not Found'})
+//         }
+        
+//         const amounttopay = investment.amountInvested;
+
+//         const { error, value } = paymentSchema.validate(req.body);
+//         if (error) {
+//             return res.status(400).json({ message: error.details[0].message })
+//         }
+
+//         const response = await paystack.post('/transaction/initialize', {
+//             email: user.email,// user's email
+//             amount: amounttopay * 100, // amount in pesewas (e.g. 10 GHS = 1000)
+//             currency: "GHS"
+//         });
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Payment initialization successful",
+//             authorization_url: response.data.data.authorization_url,
+//             reference: response.data.data.reference
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Payment initialization failed",
+//             error: error.message
+//         });
+//     }
+// };
+
 export const initializePayment = async (req, res) => {
-    try {
-        const userID = req.user.id;
-        if (!userID) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorized access"
-            });
-        }
-        const user = await User.findById(userID);
-        if (!user) {
-            return res.status(404).json({ message: "user profile not found" });
-        }
+  try {
+    const userID = req.user.id;
 
-        const { error, value } = paymentSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ message: error.details[0].message })
-        }
-
-        const { amount } = value;
-
-        const response = await paystack.post('/transaction/initialize', {
-            email: user.email,// user's email
-            amount: amount * 100, // amount in pesewas (e.g. 10 GHS = 1000)
-            currency: "GHS"
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Payment initialization successful",
-            authorization_url: response.data.data.authorization_url,
-            reference: response.data.data.reference
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Payment initialization failed",
-            error: error.message
-        });
+    if (!userID) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
     }
-};
 
+    const user = await User.findById(userID);
+    if (!user) {
+      return res.status(404).json({ message: "User profile not found" });
+    }
+
+    const investor = await Investor.findOne({ user: user._id });
+    if (!investor) {
+      return res.status(403).json({ message: "Investor not found" });
+    }
+
+    const { error, value } = paymentSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const investment = await Investment.findById(value.investmentId).populate('farmProject');
+    if (!investment) {
+      return res.status(404).json({ message: "Investment not found" });
+    }
+
+    if (!investment.farmProject) {
+      return res.status(404).json({ message: "Farm Project not linked to investment" });
+    }
+
+    const amounttopay = investment.amountInvested;
+
+    const response = await paystack.post('/transaction/initialize', {
+      email: user.email,
+      amount: amounttopay * 100,
+      currency: "GHS"
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment initialization successful",
+      authorization_url: response.data.data.authorization_url,
+      reference: response.data.data.reference
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Payment initialization failed",
+      error: error.message
+    });
+  }
+};
 
 
 
