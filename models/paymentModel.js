@@ -5,7 +5,7 @@ export const paymentModel = new Schema({
     investmentId: {
         type: Schema.Types.ObjectId,
         ref: "Investment",
-        required: true,
+        // required: true,
     },
     amount: {
         type: Number,

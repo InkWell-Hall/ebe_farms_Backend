@@ -43,11 +43,20 @@ export const createInvestment = async (req, res) => {
         const expectedROI = amountInvested * 0.20; // 20%
         const totalReturn = amountInvested + expectedROI;
 
-        // Check for overfunding
+        // Before investment creation
         if (project.receivedFunding + amountInvested > project.totalRequiredFunding) {
             return res.status(400).json({ message: "Investment exceeds required funding for this farm project" });
         }
-        // Create the investment
+
+        project.receivedFunding += amountInvested;
+        project.investors.push(investor.id);
+         // Close project if fully funded
+        if (project.receivedFunding === project.totalRequiredFunding) {
+            project.isActive = false;
+        }
+        await project.save();
+
+        // Create investment
         const newInvestment = await Investment.create({
             farmProject,
             amountInvested,
@@ -57,21 +66,11 @@ export const createInvestment = async (req, res) => {
             dateOfInvestment: new Date(),
         });
 
-        // Update investor with this investment
-        investor.investments.push(newInvestment.id);
-        await investor.save();
 
-        // Update farm project with this investor
-        project.investors.push(investor.id);
-        await project.save();
+        // if (Number(project.receivedFunding) === Number(project.totalRequiredFunding)) {
+        //     return res.status(400).json({ message: "Received Maximum funding for this project" });
+        // }
 
-        // Update project's received funding
-        project.receivedFunding += amountInvested;
-        await project.save();
-
-        if (Number(project.receivedFunding) === Number(project.totalRequiredFunding)) {
-            return res.status(400).json({ message: "Received Maximum funding for this project" });
-        }
         // Close the project
         project.isActive = false;
         await project.save();
