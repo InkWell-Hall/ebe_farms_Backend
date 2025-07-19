@@ -1,8 +1,10 @@
 // controllers/paymentController.js
 import { paystack } from "../middleware/paystack.js";
+import { Cart } from "../models/cart_model.js";
 import { FarmProject } from "../models/farmProjectModel.js";
 import { Investment } from "../models/investmentModel.js";
 import { Investor } from "../models/investorModel.js";
+import { Order } from "../models/order_model.js";
 import { Payment } from "../models/paymentModel.js";
 import { User } from "../models/user-model.js";
 import { paymentSchema } from "../schemas/paymentSchema.js";
@@ -121,157 +123,334 @@ import { paymentSchema } from "../schemas/paymentSchema.js";
 //   }
 // };
 
+// export const initializePayment = async (req, res) => {
+//   try {
+//     const userID = req.user.id;
+
+//     if (!userID) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Unauthorized access",
+//       });
+//     }
+
+//     // Validate request body (should contain investmentId, at least)
+//     const { error, value } = paymentSchema.validate(req.body);
+//     if (error) {
+//       return res.status(400).json({ message: error.details[0].message });
+//     }
+
+//     const { investmentId } = value;
+
+//     const user = await User.findById(userID);
+//     if (!user) {
+//       return res.status(404).json({ message: "User profile not found" });
+//     }
+
+//     const investor = await Investor.findOne({ user: user._id });
+//     if (!investor) {
+//       return res.status(404).json({ message: "Investor not found" });
+//     }
+
+//     const investment = await Investment.findOne({
+//       _id: investmentId,
+//       investor: investor._id,
+//     });
+
+//     if (!investment) {
+//       return res.status(404).json({ message: "Investment not found" });
+//     }
+
+//     const amounttopay = investment.amountInvested;
+
+//     // Call Paystack
+//     const response = await paystack.post("/transaction/initialize", {
+//       email: user.email,
+//       amount: amounttopay * 100, // Paystack expects amount in pesewas
+//       currency: "GHS",
+//     });
+
+//     // Return response to frontend
+//     res.status(201).json({
+//       success: true,
+//       message: "Payment initialization successful",
+//       authorization_url: response.data.data.authorization_url,
+//       reference: response.data.data.reference,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Payment initialization failed",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// export const verifyPayment = async (req, res) => {
+//     const { reference, investmentId } = req.body;
+
+//     try {
+//         // checks if the reference provided matches what is in the paystack database.....so in transaction, verify the reference.
+//         const response = await paystack.get(`/transaction/verify/${reference}`);
+
+//         const data = response.data.data;
+
+//         if (data.status === 'success') {
+//             // Save to DB
+//             const payment = await Payment.create({
+//                 investmentId,
+//                 amount: data.amount / 100,
+//                 method: data.channel,
+//                 status: data.status, // or manually set "success"
+//                 transactionId: data.id,
+//                 date: new Date()
+//             });
+
+//             // Update investment paymentStatus
+//             await Investment.findByIdAndUpdate(investmentId, {
+//                 paymentStatus: data.status // will be "success"
+//             });
+
+//             return res.status(200).json({
+//                 success: true,
+//                 message: 'Payment verified successfully',
+//                 payment
+//             });
+//         } else {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Payment not successful'
+//             });
+//         }
+//     } catch (err) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Payment verification failed",
+//             error: err.message
+//         });
+//     }
+// };
+
+
+// export const getUserPayments = async (req, res) => {
+//     try {
+//         const userId = req.user.id;
+//         if (!userId) {
+//             return res.status(401).json({
+//                 success: false,
+//                 message: "Unauthorized access"
+//             });
+//         }
+
+//         // find the investor whoes user field matches the authenticated user
+//         const investor = await Investor.findOne({ user: userId });
+//         if (!investor) {
+//             return res.status(404).json({ message: "Investor profile not found" });
+//         }
+
+//         const payments = await Payment.find()
+//             .populate({
+//                 path: "investmentId",
+//                 match: { investor: investor._id }, // Filter payments by the investor's ID....this optonal
+//                 populate: {
+//                     path: "investor", // From Investment model
+//                     populate: {
+//                         path: "user", // From Investor model
+//                         select: "-password -otp -otpExpiresAt" // Exclude sensitive fields
+//                     },
+//                 },
+//             });
+
+//         // Filter out payments where investmentId didn't match (i.e. not the user's)
+//         const userPayments = payments.filter(payment => payment.investmentId !== null);
+
+//         res.status(200).json({
+//             success: true,
+//             count: userPayments.length,
+//             data: userPayments
+//         });
+//     } catch (err) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to fetch user payments",
+//             error: err.message
+//         });
+//     }
+// };
+
 export const initializePayment = async (req, res) => {
   try {
     const userID = req.user.id;
-
-    if (!userID) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized access",
-      });
-    }
-
-    // Validate request body (should contain investmentId, at least)
     const { error, value } = paymentSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ message: error.details[0].message });
 
-    const { investmentId } = value;
-
+    const { investmentId, orderId } = value;
     const user = await User.findById(userID);
-    if (!user) {
-      return res.status(404).json({ message: "User profile not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    let amount = 0;
+    let metadata = { userId: userID };
+
+    if (investmentId) {
+      const investor = await Investor.findOne({ user: user._id });
+      if (!investor) return res.status(404).json({ message: "Investor not found" });
+
+      const investment = await Investment.findOne({ _id: investmentId, investor: investor._id });
+      if (!investment) return res.status(404).json({ message: "Investment not found" });
+
+      amount = investment.amountInvested;
+      metadata.investmentId = investment._id;
+
+    } else if (orderId) {
+      const order = await Order.findById(orderId);
+      if (!order || order.user.toString() !== userID) {
+        return res.status(400).json({ message: "Invalid order" });
+      }
+
+      amount = order.amount;
+      metadata.orderId = order._id;
+
+    } else {
+      return res.status(400).json({ message: "Provide investmentId or orderId" });
     }
-
-    const investor = await Investor.findOne({ user: user._id });
-    if (!investor) {
-      return res.status(404).json({ message: "Investor not found" });
-    }
-
-    const investment = await Investment.findOne({
-      _id: investmentId,
-      investor: investor._id,
-    });
-
-    if (!investment) {
-      return res.status(404).json({ message: "Investment not found" });
-    }
-
-    const amounttopay = investment.amountInvested;
 
     // Call Paystack
     const response = await paystack.post("/transaction/initialize", {
       email: user.email,
-      amount: amounttopay * 100, // Paystack expects amount in pesewas
+      amount: amount * 100,
       currency: "GHS",
+      metadata,
     });
 
-    // Return response to frontend
     res.status(201).json({
       success: true,
-      message: "Payment initialization successful",
+      message: "Payment initialized successfully",
       authorization_url: response.data.data.authorization_url,
       reference: response.data.data.reference,
     });
-  } catch (error) {
+
+  } catch (err) {
     res.status(500).json({
       success: false,
       message: "Payment initialization failed",
-      error: error.message,
+      error: err.message,
     });
   }
 };
 
+
+
 export const verifyPayment = async (req, res) => {
-    const { reference, investmentId } = req.body;
+  try {
+    const { reference } = req.query;
 
-    try {
-        // checks if the reference provided matches what is in the paystack database.....so in transaction, verify the reference.
-        const response = await paystack.get(`/transaction/verify/${reference}`);
+    // Step 1: Verify with Paystack
+    const response = await paystack.get(`/transaction/verify/${reference}`);
+    const data = response.data.data;
 
-        const data = response.data.data;
-
-        if (data.status === 'success') {
-            // Save to DB
-            const payment = await Payment.create({
-                investmentId,
-                amount: data.amount / 100,
-                method: data.channel,
-                status: data.status, // or manually set "success"
-                transactionId: data.id,
-                date: new Date()
-            });
-
-            // Update investment paymentStatus
-            await Investment.findByIdAndUpdate(investmentId, {
-                paymentStatus: data.status // will be "success"
-            });
-
-            return res.status(200).json({
-                success: true,
-                message: 'Payment verified successfully',
-                payment
-            });
-        } else {
-            return res.status(400).json({
-                success: false,
-                message: 'Payment not successful'
-            });
-        }
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: "Payment verification failed",
-            error: err.message
-        });
+    if (data.status !== "success") {
+      return res.status(400).json({ success: false, message: "Payment not successful" });
     }
+
+    const metadata = data.metadata;
+    const method = data.channel;
+
+    // Step 2: Save payment record
+    const payment = await Payment.create({
+      investmentId: metadata.investmentId || null,
+      cartId: metadata.cartId || null,
+      orderId: metadata.orderId || null,
+      amount: data.amount / 100,
+      method,
+      status: "success",
+      transactionId: data.id,
+    });
+
+    // Step 3: Update Investment if present
+    if (metadata.investmentId) {
+      await Investment.findByIdAndUpdate(
+        metadata.investmentId,
+        { paymentStatus: "success" },
+        { new: true }
+      );
+    }
+
+    // Step 4: Update Order if present
+    if (metadata.orderId) {
+      if (!mongoose.Types.ObjectId.isValid(metadata.orderId)) {
+        return res.status(400).json({ message: "Invalid orderId" });
+      }
+
+      const order = await Order.findById(metadata.orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      order.payment = true;
+      order.status = "paid";
+      await order.save();
+    }
+
+    // Step 5: Response
+    return res.status(200).json({
+      success: true,
+      message: "Payment verified successfully",
+      payment,
+    });
+
+  } catch (err) {
+    console.error("Payment verification error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Payment verification failed",
+      error: err.message,
+    });
+  }
 };
 
-
 export const getUserPayments = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorized access"
-            });
-        }
+  try {
+    const userId = req.user.id;
 
-        // find the investor whoes user field matches the authenticated user
-        const investor = await Investor.findOne({ user: userId });
-        if (!investor) {
-            return res.status(404).json({ message: "Investor profile not found" });
-        }
+    const investor = await Investor.findOne({ user: userId });
+    const payments = await Payment.find({
+      $or: [
+        { "investmentId": { $exists: true } },
+        { "orderId": { $exists: true } }
+      ]
+    }).populate([
+      {
+        path: "investmentId",
+        match: investor ? { investor: investor._id } : {},
+        populate: {
+          path: "investor",
+          populate: { path: "user", select: "-password" }
+        },
+      },
+      {
+        path: "orderId",
+        populate: {
+          path: "cart",
+          populate: { path: "items.advert" }
+        },
+      }
+    ]);
 
-        const payments = await Payment.find()
-            .populate({
-                path: "investmentId",
-                match: { investor: investor._id }, // Filter payments by the investor's ID....this optonal
-                populate: {
-                    path: "investor", // From Investment model
-                    populate: {
-                        path: "user", // From Investor model
-                        select: "-password -otp -otpExpiresAt" // Exclude sensitive fields
-                    },
-                },
-            });
+    const userPayments = payments.filter(p => {
+      return (p.investmentId || (p.orderId && String(p.orderId.user) === String(userId)));
+    });
 
-        // Filter out payments where investmentId didn't match (i.e. not the user's)
-        const userPayments = payments.filter(payment => payment.investmentId !== null);
+    res.status(200).json({
+      success: true,
+      count: userPayments.length,
+      data: userPayments
+    });
 
-        res.status(200).json({
-            success: true,
-            count: userPayments.length,
-            data: userPayments
-        });
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch user payments",
-            error: err.message
-        });
-    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user payments",
+      error: err.message,
+    });
+  }
 };

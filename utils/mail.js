@@ -235,3 +235,4 @@ export const sendForgetPasswordOTP = async (email, otp) => {
     console.error("Error while sending mail", error);
   }
 };
+
