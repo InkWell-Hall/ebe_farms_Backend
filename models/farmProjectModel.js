@@ -30,6 +30,10 @@ export const farmProjectModel = new Schema({
         type: Number,
         default: 0,
     },
+    remainingFundingAmount: {
+        type: Number,
+        default: 0,
+    },
     images:{
         type:[String],
         default:[],

@@ -387,7 +387,7 @@ export const singleProduct = async (req, res) => {
 
 export const updateUserproduct = async (req, res) => {
   try {
-    const userId = req.user.id;
+    // const userId = req.user.id;
     const productId = req.params.id;
 
     const product = await Advert.findById(productId);
@@ -395,12 +395,12 @@ export const updateUserproduct = async (req, res) => {
       return res.status(404).json({ message: 'Advert not found' });
     }
 
-    if (product.user.toString() !== userId) {
-      return res.status(403).json({ message: 'You are not authorized to edit this advert' });
-    }
+    // if (product.user.toString() !== userId) {
+    //   return res.status(403).json({ message: 'You are not authorized to edit this advert' });
+    // }
 
     const updatedProduct = await Advert.findOneAndUpdate(
-      { _id: productId, user: userId },
+      { _id: productId },
       req.body,
       { new: true }
     ).populate('user', '-password -otp');

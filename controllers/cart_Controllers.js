@@ -236,8 +236,6 @@ const addToCart = async (req, res) => {
   }
 };
 
-
-//update user cart
 const updateCart = async (req, res) => {
   try {
     const { userId, itemId, quantity } = req.body;
@@ -246,21 +244,36 @@ const updateCart = async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing or invalid fields" });
     }
 
-    const userData = await User.findById(userId);
-    if (!userData) {
+    const user = await User.findById(userId);
+    if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Initialize cartData if it doesn't exist
-    const cartData = userData.cartData || {};
+    // Check if item already exists in cart
+    const index = user.cart.findIndex(c => c.item.toString() === itemId);
 
-    // Update quantity
-    cartData[itemId] = quantity;
+    if (index !== -1) {
+      // Update quantity
+      user.cart[index].quantity = quantity;
+    } else {
+      // Add item to cart
+      user.cart.push({ item: itemId, quantity });
+    }
 
-    // Save back to DB
-    await User.findByIdAndUpdate(userId, { cartData });
+    await user.save();
 
-    res.json({ success: true, message: "Cart Updated", cartData });
+    // ✅ Populate cart.item to get full item details
+    await user.populate({
+      path: 'cart.item',
+      select: '_id name price image' // Optional: limit fields
+    });
+
+    res.json({
+      success: true,
+      message: "Cart updated",
+      cart: user.cart
+    });
+
   } catch (error) {
     console.log("❌ Cart Update Error:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -268,16 +281,16 @@ const updateCart = async (req, res) => {
 };
 
 
+
 //add products to user cart
 const getUserCart = async (req, res) => {
   try {
-    const { userId } = req.user.id;
+    // const { userId } = req.user.id;
     const cartID = req.params.id;
 
-    const userData = await User.findById(cartID);
-    let cartData = await userData.cartData;
+    const userData = await Cart.findById(cartID);
 
-    res.json({ success: true, cartData });
+    res.json({ success: true, userData });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -286,7 +299,7 @@ const getUserCart = async (req, res) => {
 
 const delUserCart = async (req, res) => {
   try {
-    const userId = req.user.id;
+    // const userId = req.user.id;
     const itemId = req.params.itemId;
 
     if (!itemId) {
@@ -295,7 +308,6 @@ const delUserCart = async (req, res) => {
 
     // Delete the entire item (including all sizes)
     const updatedUser = await User.findByIdAndUpdate(
-      userId,
       { $unset: { [`cartData.${itemId}`]: "" } },
       { new: true }
     );

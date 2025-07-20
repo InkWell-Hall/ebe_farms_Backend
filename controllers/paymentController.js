@@ -341,72 +341,113 @@ export const initializePayment = async (req, res) => {
 
 
 export const verifyPayment = async (req, res) => {
-  try {
-    const { reference } = req.query;
+  const { reference, investmentId } = req.body;
 
-    // Step 1: Verify with Paystack
+  try {
+    // 1. Verify the transaction with Paystack
     const response = await paystack.get(`/transaction/verify/${reference}`);
     const data = response.data.data;
 
-    if (data.status !== "success") {
-      return res.status(400).json({ success: false, message: "Payment not successful" });
+    if (data.status === 'success') {
+      // 2. Save payment to DB
+      const payment = await Payment.create({
+        investmentId,
+        amount: data.amount / 100,
+        method: data.channel,
+        status: data.status,
+        transactionId: data.id,
+        date: new Date()
+      });
+
+      // 3. Update investment with status
+      const investment = await Investment.findByIdAndUpdate(
+        investmentId,
+        { paymentStatus: data.status },
+        { new: true } // so you can access updated doc
+      ).populate('farmProject'); // populate to access farmProject details
+
+      // 4. Update FarmProject remaining funding amount
+      const farmProject = investment.farmProject;
+
+      // Add the payment to receivedFunding
+      // farmProject.receivedFunding += payment.amount;
+
+      const remaining = farmProject.totalRequiredFunding - farmProject.receivedFunding;
+
+      await FarmProject.findByIdAndUpdate(farmProject._id, {
+        remainingFundingAmount: remaining
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment verified and processed successfully',
+        payment
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment not successful'
+      });
     }
-
-    const metadata = data.metadata;
-    const method = data.channel;
-
-    // Step 2: Save payment record
-    const payment = await Payment.create({
-      investmentId: metadata.investmentId || null,
-      cartId: metadata.cartId || null,
-      orderId: metadata.orderId || null,
-      amount: data.amount / 100,
-      method,
-      status: "success",
-      transactionId: data.id,
-    });
-
-    // Step 3: Update Investment if present
-    if (metadata.investmentId) {
-      await Investment.findByIdAndUpdate(
-        metadata.investmentId,
-        { paymentStatus: "success" },
-        { new: true }
-      );
-    }
-
-    // Step 4: Update Order if present
-    if (metadata.orderId) {
-      if (!mongoose.Types.ObjectId.isValid(metadata.orderId)) {
-        return res.status(400).json({ message: "Invalid orderId" });
-      }
-
-      const order = await Order.findById(metadata.orderId);
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-
-      order.payment = true;
-      order.status = "paid";
-      await order.save();
-    }
-
-    // Step 5: Response
-    return res.status(200).json({
-      success: true,
-      message: "Payment verified successfully",
-      payment,
-    });
-
   } catch (err) {
-    console.error("Payment verification error:", err.message);
     return res.status(500).json({
       success: false,
-      message: "Payment verification failed",
-      error: err.message,
+      message: 'Payment verification failed',
+      error: err.message
     });
   }
 };
+
+
+export const verifyOrderPayment = async (req, res) => {
+    const { reference, orderId } = req.body;
+
+    try {
+        // checks if the reference provided matches what is in the paystack database.....so in transaction, verify the reference.
+        const response = await paystack.get(`/transaction/verify/${reference}`);
+
+        const data = response.data.data;
+
+        if (data.status === 'success') {
+            // Save to DB
+            const payment = await Payment.create({
+                orderId,
+                amount: data.amount / 100,
+                method: data.channel,
+                status: data.status, // or manually set "success"
+                transactionId: data.id,
+                date: new Date()
+            });
+
+            // Update investment paymentStatus
+            await Order.findByIdAndUpdate(orderId, {
+                status: data.status,
+                payment: true // will be "success"
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: 'Payment verified successfully',
+                payment
+            });
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: 'Payment not successful'
+            });
+        }
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Payment verification failed",
+            error: err.message
+        });
+    }
+};
+
+
+
+
 
 export const getUserPayments = async (req, res) => {
   try {

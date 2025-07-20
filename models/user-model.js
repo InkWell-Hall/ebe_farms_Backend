@@ -19,7 +19,7 @@ export const userModel = new Schema({
         type: String, // Changed to String to accommodate international phone number formats
         required: true,
     },
-    adminCode:{
+    adminCode: {
         type: String,
     },
     otp: {
@@ -32,6 +32,20 @@ export const userModel = new Schema({
         type: Boolean,
         default: false,
     },
+    cart: [
+        {
+            _id: { 
+                type: Schema.Types.ObjectId, 
+                auto: true }, // ensure _id is present
+            item: {
+                type: Schema.Types.ObjectId,
+                 ref: 'Advert' },
+            quantity: { 
+                type: Number, 
+                required: true }
+        }
+    ]
+
 });
 
 userModel.plugin(normalize);
