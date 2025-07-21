@@ -18,10 +18,10 @@ export const createFarmproject = async (req, res) => {
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
-
+        const newUnit = value.totalRequiredFunding / value.numberOfInvestors
         // ✅ Add imageUrls to validated data
         value.images = imageUrls;
-
+        value.unitPrice = newUnit
         const farm = await FarmProject.create({
             ...value
             // user: req.user.id, // Make sure you're including the user here

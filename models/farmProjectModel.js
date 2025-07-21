@@ -22,6 +22,14 @@ export const farmProjectModel = new Schema({
         type: Number,
         required: true,
     },
+    numberOfInvestors: {
+        type: Number,
+        required: true,
+    },
+    unitPrice: {
+        type: Number,
+        required: true,
+    },
     totalRequiredFunding: {
         type: Number,
         required: true,
