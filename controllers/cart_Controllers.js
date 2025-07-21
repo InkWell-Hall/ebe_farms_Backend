@@ -187,7 +187,7 @@ const addToCart = async (req, res) => {
     //   return res.status(400).json({ success: false, message: error.details[0].message });
     // }
 
-    const { userId, itemId } = req.body;
+    const { userId, itemId, quantity } = req.body;
 
     // Step 2: Check if product exists
     const product = await Advert.findById(itemId);
@@ -206,7 +206,7 @@ const addToCart = async (req, res) => {
     const existingItem = cart.items.find(item => item.advert.toString() === itemId);
 
     if (existingItem) {
-      existingItem.quantity += 1;
+      existingItem.quantity = quantity;
     } else {
       cart.items.push({ advert: itemId, quantity: 1 });
     }
