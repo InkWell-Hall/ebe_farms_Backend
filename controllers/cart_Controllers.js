@@ -181,37 +181,35 @@ import { Advert } from '../models/advert_model.js';
 
 const addToCart = async (req, res) => {
   try {
-    // Step 1: Validate request body
-    // const { error } = addToCartSchema.validate(req.body);
-    // if (error) {
-    //   return res.status(400).json({ success: false, message: error.details[0].message });
-    // }
-
     const { userId, itemId, quantity } = req.body;
 
-    // Step 2: Check if product exists
+    if (!userId || !itemId) {
+      return res.status(400).json({ success: false, message: "Missing userId or itemId" });
+    }
+
+    // Step 1: Check if product exists
     const product = await Advert.findById(itemId);
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    // Step 3: Find or create user's cart
+    // Step 2: Find or create user's cart
     let cart = await Cart.findOne({ user: userId });
 
     if (!cart) {
       cart = new Cart({ user: userId, items: [] });
     }
 
-    // Step 4: Add or update item in cart
+    // Step 3: Add or update item
     const existingItem = cart.items.find(item => item.advert.toString() === itemId);
 
     if (existingItem) {
-      existingItem.quantity = quantity;
+      existingItem.quantity += quantity || 1; // Accumulate quantity
     } else {
-      cart.items.push({ advert: itemId, quantity: 1 });
+      cart.items.push({ advert: itemId, quantity: quantity || 1 });
     }
 
-    // Step 5: Recalculate total
+    // Step 4: Recalculate total amount
     const itemIds = cart.items.map(i => i.advert);
     const products = await Advert.find({ _id: { $in: itemIds } });
 
@@ -226,7 +224,7 @@ const addToCart = async (req, res) => {
     cart.totalAmount = total;
     cart.dateAdded = new Date();
 
-    // Step 6: Save and return populated cart
+    // Step 5: Save and populate cart
     await cart.save();
 
     const populatedCart = await Cart.findById(cart._id)
