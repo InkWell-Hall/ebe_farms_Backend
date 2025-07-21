@@ -14,5 +14,5 @@ export const advertSchema = Joi.object({
   freshness: Joi.string().required(),
   quantity: Joi.string().required(),
   bestseller: Joi.boolean(),
-  date: Joi.date().required()
+  date: Joi.date()
 });
