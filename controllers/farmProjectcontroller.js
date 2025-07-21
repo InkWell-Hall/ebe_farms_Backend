@@ -98,7 +98,7 @@ export const updateFarmproject = async (req, res) => {
             req.body,
             { new: true }
         );
-        return res.status(200).json({ message: 'Farm Project updated Successfully', updateFarmproject: newfarmProject });
+        return res.status(200).json({ message: 'Farm Project updated Successfully', newfarmProject });
     } catch (error) {
         return res.status(500).json({ message: error.message })
     };

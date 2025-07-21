@@ -399,7 +399,7 @@ export const updateUserproduct = async (req, res) => {
     //   return res.status(403).json({ message: 'You are not authorized to edit this advert' });
     // }
 
-    const updatedProduct = await Advert.findOneAndUpdate(
+    const updatedProduct = await Advert.findByIdAndUpdate(
       { _id: productId },
       req.body,
       { new: true }

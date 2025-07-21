@@ -39,8 +39,10 @@ export const createInvestment = async (req, res) => {
             return res.status(400).json({ message: "Farm project is closed, choose a different project" });
         }
 
+        const ROI = project.estimatedROI / 100
+
         // ROI Calculations.....total amount invested plus expected return on investment
-        const expectedROI = amountInvested * 0.20; // 20%
+        const expectedROI = amountInvested * ROI; // taking ROI from the farmproject
         const totalReturn = amountInvested + expectedROI;
 
         // Before investment creation
