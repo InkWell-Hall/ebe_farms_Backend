@@ -221,9 +221,9 @@ import { Cart } from "../models/cart_model.js";
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { cartId, address, paymentMethod } = req.body;
+    const { cartId, address, paymentMethod, firstname,lastname,city,country,street,zipcode,phone,state } = req.body;
 
-    if (!userId || !cartId || !address || !paymentMethod) {
+    if (!userId || !cartId || !address || !paymentMethod ||!firstname ||!lastname ||!city ||!country ||!street ||!zipcode ||!phone ||!state) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
@@ -258,6 +258,13 @@ export const createOrder = async (req, res) => {
       cart: cart._id,
       user: userId,
       address,
+      firstname,
+      lastname,
+      city,
+      country,
+      zipcode,
+      phone,
+      state,
       paymentMethod,
       amount: totalAmount,
       payment: false,
