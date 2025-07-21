@@ -177,24 +177,32 @@
 
 import { User } from "../models/user-model.js";
 import { Cart } from '../models/cart_model.js';
-import { Advert } from '../models/advert_model.js'
+import { Advert } from '../models/advert_model.js';
 
 const addToCart = async (req, res) => {
   try {
+    // Step 1: Validate request body
+    // const { error } = addToCartSchema.validate(req.body);
+    // if (error) {
+    //   return res.status(400).json({ success: false, message: error.details[0].message });
+    // }
+
     const { userId, itemId } = req.body;
 
-    if (!userId || !itemId) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    // Step 2: Check if product exists
+    const product = await Advert.findById(itemId);
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    // 1. Find or create user's cart
+    // Step 3: Find or create user's cart
     let cart = await Cart.findOne({ user: userId });
 
     if (!cart) {
-      cart = new Cart({ user: userId, items: [], totalAmount: 0 });
+      cart = new Cart({ user: userId, items: [] });
     }
 
-    // 2. Check if item already exists in cart
+    // Step 4: Add or update item in cart
     const existingItem = cart.items.find(item => item.advert.toString() === itemId);
 
     if (existingItem) {
@@ -203,38 +211,40 @@ const addToCart = async (req, res) => {
       cart.items.push({ advert: itemId, quantity: 1 });
     }
 
-    // 3. Recalculate totalAmount
-    const populatedItems = await Advert.find({ _id: { $in: cart.items.map(i => i.advert) } });
+    // Step 5: Recalculate total
+    const itemIds = cart.items.map(i => i.advert);
+    const products = await Advert.find({ _id: { $in: itemIds } });
 
     let total = 0;
-    cart.items.forEach(cartItem => {
-      const product = populatedItems.find(p => p._id.toString() === cartItem.advert.toString());
-      if (product) {
-        total += product.price * cartItem.quantity;
+    cart.items.forEach(item => {
+      const match = products.find(p => p._id.toString() === item.advert.toString());
+      if (match) {
+        total += match.price * item.quantity;
       }
     });
 
     cart.totalAmount = total;
-    cart.dateAdded = Date.now();
+    cart.dateAdded = new Date();
 
-    // 4. Save and populate cart
+    // Step 6: Save and return populated cart
     await cart.save();
+
     const populatedCart = await Cart.findById(cart._id)
       .populate('items.advert')
       .populate('user', '-password -otp');
 
-    // 5. Return formatted cart response
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: 'Item added to cart',
+      message: 'Item added to cart successfully',
       cart: populatedCart
     });
 
   } catch (error) {
-    console.error("Add to Cart Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Add to Cart Error:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 const updateCart = async (req, res) => {
   try {
