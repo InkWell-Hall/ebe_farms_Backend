@@ -74,8 +74,8 @@ export const createInvestment = async (req, res) => {
         // }
 
         // Close the project
-        project.isActive = false;
-        await project.save();
+        // project.isActive = false;
+        // await project.save();
 
         // Populate and return the full investment
         const populatedInvestment = await Investment.findById(newInvestment.id)

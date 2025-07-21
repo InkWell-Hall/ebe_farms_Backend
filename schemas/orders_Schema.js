@@ -13,7 +13,6 @@ export const orderSchema = Joi.object({
     paymentMethod: Joi.string()
         .valid('cash on delivery', 'online payment', 'stripe')
         .required(),
-
     payment: Joi.boolean().default(false),
 
     date: Joi.number().required()
