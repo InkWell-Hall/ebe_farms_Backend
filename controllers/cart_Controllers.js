@@ -183,65 +183,72 @@ const addToCart = async (req, res) => {
   try {
     const { userId, itemId, quantity } = req.body;
 
-    if (!userId || !itemId) {
-      return res.status(400).json({ success: false, message: "Missing userId or itemId" });
+    // Validate quantity
+    if (!userId || !itemId || isNaN(quantity) || quantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing or invalid userId, itemId, or quantity",
+      });
     }
 
     // Step 1: Check if product exists
     const product = await Advert.findById(itemId);
     if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
     }
 
     // Step 2: Find or create user's cart
     let cart = await Cart.findOne({ user: userId });
-
     if (!cart) {
       cart = new Cart({ user: userId, items: [] });
     }
 
     // Step 3: Add or update item
-    const existingItem = cart.items.find(item => item.advert.toString() === itemId);
-
+    const existingItem = cart.items.find(
+      (item) => item.advert.toString() === itemId
+    );
     if (existingItem) {
-      existingItem.quantity += quantity || 1; // Accumulate quantity
+      existingItem.quantity += Number(quantity); // Ensure quantity is a number
     } else {
-      cart.items.push({ advert: itemId, quantity: quantity || 1 });
+      cart.items.push({ advert: itemId, quantity: Number(quantity) });
     }
 
     // Step 4: Recalculate total amount
-    const itemIds = cart.items.map(i => i.advert);
+    const itemIds = cart.items.map((i) => i.advert);
     const products = await Advert.find({ _id: { $in: itemIds } });
-
     let total = 0;
-    cart.items.forEach(item => {
-      const match = products.find(p => p._id.toString() === item.advert.toString());
+    cart.items.forEach((item) => {
+      const match = products.find((p) => p._id.toString() === item.advert.toString());
       if (match) {
         total += match.price * item.quantity;
       }
     });
-
     cart.totalAmount = total;
     cart.dateAdded = new Date();
 
     // Step 5: Save and populate cart
     await cart.save();
-
     const populatedCart = await Cart.findById(cart._id)
-      .populate('items.advert')
-      .populate('user', '-password -otp');
+      .populate("items.advert")
+      .populate("user", "-password -otp");
 
     return res.status(200).json({
       success: true,
-      message: 'Item added to cart successfully',
-      cart: populatedCart
+      message: "Item added to cart successfully",
+      cart: populatedCart,
     });
-
   } catch (error) {
-    console.error('Add to Cart Error:', error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Add to Cart Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
 
 
 const updateCart = async (req, res) => {
