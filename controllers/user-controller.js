@@ -367,6 +367,18 @@ export const allUser = async (req, res) => {
         return res.status(500).json({ message: error.message })
     }
 }
+export const singleUser = async (req, res) => {
+    try {
+        const UserID = req.params.id
+        const user = await User.findById(UserID);
+        if(!user){
+            return res.status(400).json({message:'User not Available'})
+        }
+        return res.status(200).json({ message: 'All the users available', user });
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
 
 
 // export const signUpn = async (req, res) => {
