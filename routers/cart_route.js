@@ -10,6 +10,6 @@ export const cartRoute = Router();
 // cartRoute.get('/cart', authenticate,hasPermission("getAllcarts"),getAllcarts)
 
 cartRoute.get("/get/:id",authenticate,getUserCart);
-cartRoute.post("/cart/add", addToCart);
+cartRoute.post("/cart/add",authenticate,addToCart);
 cartRoute.patch("/update", updateCart);
 cartRoute.delete("/delete/:itemId", authenticate,delUserCart);

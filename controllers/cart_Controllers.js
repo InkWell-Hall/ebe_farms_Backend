@@ -181,10 +181,15 @@ import { Advert } from '../models/advert_model.js';
 
 const addToCart = async (req, res) => {
   try {
-    const { userId, itemId, quantity } = req.body;
+    const userID = req.user.id
+    const user = await User.findById(userID)
+    if(!user){
+      return res.status(400).json({message:'User not Authorize'})
+    }
+    const { itemId, quantity } = req.body;
 
     // Validate quantity
-    if (!userId || !itemId || isNaN(quantity) || quantity <= 0) {
+    if (!user._id || !itemId || isNaN(quantity) || quantity <= 0) {
       return res.status(400).json({
         success: false,
         message: "Missing or invalid userId, itemId, or quantity",
@@ -201,9 +206,9 @@ const addToCart = async (req, res) => {
     }
 
     // Step 2: Find or create user's cart
-    let cart = await Cart.findOne({ user: userId });
+    let cart = await Cart.findOne({ user: userID });
     if (!cart) {
-      cart = new Cart({ user: userId, items: [] });
+      cart = new Cart({ user: userID, items: [] });
     }
 
     // Step 3: Add or update item
@@ -226,11 +231,14 @@ const addToCart = async (req, res) => {
         total += match.price * item.quantity;
       }
     });
+
     cart.totalAmount = total;
     cart.dateAdded = new Date();
-
     // Step 5: Save and populate cart
     await cart.save();
+
+    user.cart = cart._id
+    await User.save
     const populatedCart = await Cart.findById(cart._id)
       .populate("items.advert")
       .populate("user", "-password -otp");
