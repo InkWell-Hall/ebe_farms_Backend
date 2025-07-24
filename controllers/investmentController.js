@@ -108,52 +108,49 @@ export const allinvestment = async (req, res) => {
         return res.status(500).json({ message: error.message })
     }
 }
-
 export const userInvestment = async (req, res) => {
-    try {
-        const { userID } = req.body; // destructure properly
+  try {
+    const { userID } = req.params;
 
-        if (!userID) {
-            return res.status(401).json({ message: "Unauthorized: Missing userID" });
-        }
-
-        // Find investor profile based on user ID
-        const investor = await Investor.findOne({ user: userID });
-        if (!investor) {
-            return res.status(404).json({ message: "Investor profile not found" });
-        }
-
-        // Find all investments for this investor
-        const investments = await Investment.find({ investor: investor._id })
-            .populate("farmProject")
-            .populate({
-                path: "investor",
-                populate: {
-                    path: "user",
-                    select: "-password -otp -otpExpiresAt"
-                },
-                select: "-investments"
-            });
-
-        if (!investments.length) {
-            return res.status(404).json({ message: "No investments found for this user" });
-        }
-
-        // Calculate total invested amount
-        const totalInvested = investments.reduce((sum, investment) => {
-            return sum + investment.amountInvested;
-        }, 0);
-
-        return res.status(200).json({
-            message: "All investments for this user",
-            totalInvested,
-            investments,
-        });
-
-    } catch (error) {
-        return res.status(500).json({ message: error.message });
+    if (!userID) {
+      return res.status(401).json({ message: "Unauthorized: Missing userID" });
     }
+
+    const investor = await Investor.findOne({ user: userID });
+    if (!investor) {
+      return res.status(404).json({ message: "Investor profile not found" });
+    }
+
+    const investments = await Investment.find({ investor: investor._id })
+      .populate("farmProject")
+      .populate({
+        path: "investor",
+        populate: {
+          path: "user",
+          select: "-password -otp -otpExpiresAt",
+        },
+        select: "-investments",
+      });
+
+    if (!investments.length) {
+      return res.status(404).json({ message: "No investments found for this user" });
+    }
+
+    const totalInvested = investments.reduce((sum, investment) => {
+      return sum + investment.amountInvested;
+    }, 0);
+
+    return res.status(200).json({
+      message: "All investments for this user",
+      totalInvested,
+      investments,
+    });
+  } catch (error) {
+    console.error(error); // Log the error for debugging purposes
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
+
 
 
 export const singleinvestment = async (req, res) => {

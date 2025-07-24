@@ -19,6 +19,10 @@ export const userModel = new Schema({
         type: String, // Changed to String to accommodate international phone number formats
         required: true,
     },
+    wallet: {
+        type: Number,
+        default:(0)
+    },
     adminCode: {
         type: String,
     },
