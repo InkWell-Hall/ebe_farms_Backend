@@ -381,3 +381,16 @@ export {
   getVendorOrdersAcrossAdverts,
   allOrders,
 };
+
+export const orderbyID = async(req,res)=>{
+  try {
+    const orderID = req.params.id
+    const findOrder = await orderModel.findById(orderID);
+    if(!findOrder){
+      return res.status(400).json({message:'Order not found'})
+    }
+    return res.status(200).json({message:'Your Order',findOrder})
+  } catch (error) {
+    return res.status(500).json({message:error.message})
+  }
+}

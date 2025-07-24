@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { allOrders, createOrder, getVendorOrdersAcrossAdverts, updateStatus} from "../controllers/order_controller.js";
+import { allOrders, createOrder, getVendorOrdersAcrossAdverts, orderbyID, updateStatus} from "../controllers/order_controller.js";
 import { authenticate} from "../middleware/auth.js";
 
 
@@ -15,6 +15,7 @@ ordersRoute.get("/order/list",allOrders);
 ordersRoute.post("/status",updateStatus);
 ordersRoute.post("/order",authenticate,createOrder);
 
+ordersRoute.get("/order/:id",orderbyID);
 // Payment Routes
 // ordersRoute.post("/place", placeOrder);
 // ordersRoute.post("/razorpay", placeOrderRazorpay);
