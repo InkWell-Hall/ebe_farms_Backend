@@ -394,3 +394,28 @@ export const orderbyID = async(req,res)=>{
     return res.status(500).json({message:error.message})
   }
 }
+
+export const userOrders = async (req, res) => {
+  try {
+    const userID = req.user.id;
+
+    if (!userID) {
+      return res.status(400).json({ message: 'You are not authorized' });
+    }
+
+    const user = await User.findById(userID);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const orders = await orderModel.find({ user: userID });
+    if (orders.length === 0) {
+      return res.status(404).json({ message: 'No orders found for this user' });
+    }
+
+    return res.status(200).json({ message: 'Your orders', orders });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
