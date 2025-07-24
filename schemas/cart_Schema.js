@@ -8,4 +8,5 @@ export const cartSchema = Joi.object({
     })).required(),
     totalAmount: Joi.number(),
     dateAdded: Joi.number(),
+    user: Joi.string().trim()
 });

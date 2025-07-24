@@ -207,55 +207,45 @@
 
 // //placing orders using RazorPay method
 // const placeOrderRazorpay = async (req, res) => { };
-import { sendDeliveryEmail } from "../utils/mail.js";
+// import { sendDeliveryEmail } from "../utils/mail.js";
 import { Advert } from "../models/advert_model.js";
-import orderModel from "../models/new_order-model.js";
 import { Order } from "../models/order_model.js";
-
-
-// import Stripe from "stripe";
-import { User } from "../models/user-model.js";
-import { Cart } from "../models/cart_model.js";
+import { Cart } from "../models/cart_model.js"
+import { orderSchema } from "../schemas/orders_Schema.js";
+import {User} from "../models/user-model.js"
 
 
 export const createOrder = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { cartId, address, paymentMethod, firstname,lastname,city,country,street,zipcode,phone,state } = req.body;
+    // Validate request body using Joi
+    const { error, value } = orderSchema.validate(req.body);
 
-    if (!userId || !cartId || !address || !paymentMethod ||!firstname ||!lastname ||!city ||!country ||!street ||!zipcode ||!phone ||!state) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
     }
 
-    const cart = await Cart.findById(cartId)
-      .populate("items.advert") // make sure this matches your schema
-      .exec();
+    const { cart, paymentMethod, address, firstname, lastname, city, country, zipcode, phone, state } = value;
 
-    if (!cart || !cart.items || cart.items.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart is empty or not found",
-      });
+    // Get userId from req.user (assuming authentication middleware sets this)
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Calculate totalAmount
-    let totalAmount = 0;
-    for (const item of cart.items) {
-      if (!item.advert) {
-        return res.status(400).json({
-          success: false,
-          message: "One or more products in your cart were not found",
-        });
-      }
-      totalAmount += item.advert.price * item.quantity;
+    // Find cart and verify it's valid
+    const existingCart = await Cart.findById(cart).populate("items.advert");
+    if (!existingCart || existingCart.items.length === 0) {
+      return res.status(404).json({ message: "Cart is empty or not found" });
     }
 
-    // Create Order
-    const order = new Order({
-      cart: cart._id,
+    // Calculate total amount
+    const totalAmount = existingCart.items.reduce((sum, item) => {
+      return sum + (item.advert?.price || 0) * item.quantity;
+    }, 0);
+
+    // Create new order document
+    const newOrder = new Order({
+      cart: existingCart._id,
       user: userId,
       address,
       firstname,
@@ -268,31 +258,33 @@ export const createOrder = async (req, res) => {
       paymentMethod,
       amount: totalAmount,
       payment: false,
-      date: Date.now(),
+      date: new Date()
     });
 
-    await order.save();
+    await newOrder.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Order created successfully",
-      order,
+      order: newOrder
     });
+
   } catch (error) {
-    console.error("Create Order Error:", error);
-    res.status(500).json({
+    console.error("Order Creation Error:", err.message);
+    return res.status(500).json({
       success: false,
       message: "Failed to create order",
-      error: error.message,
+      error: error.message
     });
   }
 };
+
 
 //All orders data for admin panel
 const allOrders = async (req, res) => {
   try {
 
-    const orders = await orderModel.find({})
+    const orders = await Order.find({})
     res.json({ success: true, orders })
 
   } catch (error) {
@@ -385,7 +377,7 @@ export {
 export const orderbyID = async(req,res)=>{
   try {
     const orderID = req.params.id
-    const findOrder = await orderModel.findById(orderID);
+    const findOrder = await Order.findById(orderID);
     if(!findOrder){
       return res.status(400).json({message:'Order not found'})
     }
@@ -395,27 +387,30 @@ export const orderbyID = async(req,res)=>{
   }
 }
 
-export const userOrders = async (req, res) => {
+export const getUserOrders = async (req, res) => {
   try {
-    const userID = req.user.id;
+    const { userId } = req.params;
 
-    if (!userID) {
-      return res.status(400).json({ message: 'You are not authorized' });
-    }
+    const orders = await Order.find({ user: userId })
+      .populate("cart") // optionally populate the cart if needed
+      .sort({ date: -1 }); // newest first
 
-    const user = await User.findById(userID);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const orders = await orderModel.find({ user: userID });
     if (orders.length === 0) {
-      return res.status(404).json({ message: 'No orders found for this user' });
+      return res.status(404).json({ message: "No orders found for this user" });
     }
 
-    return res.status(200).json({ message: 'Your orders', orders });
+    res.status(200).json({
+      success: true,
+      message: "User orders retrieved successfully",
+      orders,
+      count: orders.length,
+    });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user orders",
+      error: error.message,
+    });
   }
 };
 
