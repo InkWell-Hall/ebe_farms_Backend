@@ -343,7 +343,7 @@ export const listProducts = async (req, res) => {
 export const removeProduct = async (req, res) => {
   try {
     const advertID = req.params.id;
-    const userID = req.user.id;
+    // const userID = req.user.id;
 
     if (!advertID) {
       return res.status(400).json({ message: 'Advert ID cant be found' })
@@ -354,11 +354,11 @@ export const removeProduct = async (req, res) => {
       return res.status(400).json({ message: 'Cant find this Advert' })
     }
 
-    if (advert.user.toString() !== userID.toString()) {
-      return res.status(400).json({ message: 'Not allowed to delete this Advert' })
-    }
-    console.log('advert.user:', advert.user);
-    console.log('userID:', userID);
+    // if (advert.user.toString() !== userID.toString()) {
+    //   return res.status(400).json({ message: 'Not allowed to delete this Advert' })
+    // }
+    // console.log('advert.user:', advert.user);
+    // console.log('userID:', userID);
 
 
     await Advert.findByIdAndDelete(advertID)
