@@ -111,19 +111,20 @@ export const allinvestment = async (req, res) => {
 
 export const userInvestment = async (req, res) => {
     try {
-        const userID = req.user.id;
+        const { userID } = req.body; // destructure properly
+
         if (!userID) {
-            return res.status(401).json({ message: "Unauthorized" });
+            return res.status(401).json({ message: "Unauthorized: Missing userID" });
         }
 
-        // Find investor profile
+        // Find investor profile based on user ID
         const investor = await Investor.findOne({ user: userID });
         if (!investor) {
             return res.status(404).json({ message: "Investor profile not found" });
         }
 
-        // Find and populate all investments by that investor
-        const investments = await Investment.find({ investor: investor.id })
+        // Find all investments for this investor
+        const investments = await Investment.find({ investor: investor._id })
             .populate("farmProject")
             .populate({
                 path: "investor",
@@ -134,11 +135,11 @@ export const userInvestment = async (req, res) => {
                 select: "-investments"
             });
 
-        if (investments.length === 0) {
+        if (!investments.length) {
             return res.status(404).json({ message: "No investments found for this user" });
         }
 
-        // ✅ Calculate total amount invested
+        // Calculate total invested amount
         const totalInvested = investments.reduce((sum, investment) => {
             return sum + investment.amountInvested;
         }, 0);

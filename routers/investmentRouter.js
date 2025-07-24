@@ -6,7 +6,7 @@ export const investmentRouter = Router();
 
 investmentRouter.post('/investment',authenticate,createInvestment)
 investmentRouter.get('/investment',authenticate,allinvestment) 
-investmentRouter.get('/user-investment',authenticate,userInvestment) 
+investmentRouter.get('/user-investment',userInvestment) 
 investmentRouter.get('/investment/:id',authenticate,singleinvestment) 
 investmentRouter.delete('/investment/:id',authenticate,deleteInvestment)
 
