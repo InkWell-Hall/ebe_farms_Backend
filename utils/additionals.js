@@ -13,10 +13,12 @@ export const calculateCartSummary = (cart) => {
   let totalAmount = 0;
 
   cart.items.forEach((item) => {
-    const price = item.advert?.price || 0;
-    itemCount += item.quantity;
-    totalAmount += item.quantity * price;
+    console.log('Item Advert:', item.advert);
+    if (item.advert && item.advert.price) {
+      itemCount += item.quantity;
+      totalAmount += item.quantity * item.advert.price;
+    }
   });
 
-  return { itemCount, totalAmount };
-};
+  return { itemCount, totalAmount };
+}

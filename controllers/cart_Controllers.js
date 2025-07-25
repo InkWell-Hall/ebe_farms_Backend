@@ -1,4 +1,6 @@
+import mongoose from "mongoose";
 import { Cart } from "../models/cart_model.js"
+import { User } from "../models/user-model.js";
 import { cartSchema } from "../schemas/cart_Schema.js"
 import { calculateCartSummary } from "../utils/help.js";
 
@@ -28,13 +30,8 @@ export const cartStorage = async (req, res) => {
 
     // Wrap single item into full expected cart shape
     const cartInput = {
-      items: [
-        {
-          advert: req.body.advert,
-          quantity: req.body.quantity
-        }
-      ],
-      dateAdded: Date.now()
+      items: [{ advert: req.body.advert, quantity: req.body.quantity }],
+      dateAdded: Date.now(),
     };
 
     const { error, value } = cartSchema.validate(cartInput);
@@ -44,11 +41,10 @@ export const cartStorage = async (req, res) => {
 
     // Find existing cart
     let cart = await Cart.findOne({ user: userId }).populate('items.advert');
-
     if (cart) {
       const incomingItem = value.items[0];
       const existingItemIndex = cart.items.findIndex(
-        (item) => item.advert.toString() === incomingItem.advert
+        (item) => item.advert && item.advert.toString() === incomingItem.advert
       );
 
       if (existingItemIndex >= 0) {
@@ -59,44 +55,47 @@ export const cartStorage = async (req, res) => {
 
       const { itemCount, totalAmount } = calculateCartSummary(cart);
       cart.totalAmount = totalAmount;
-
       await cart.save();
       await cart.populate('user', '-password -otp');
-
       return res.status(200).json({
         message: 'Cart updated successfully',
         cart,
         itemCount,
-        totalAmount
+        totalAmount,
       });
     } else {
       // Create new cart
-      const newCart = await Cart.create({
-        ...value,
-        user: userId
-      });
-
+      const newCart = await Cart.create({ ...value, user: userId });
       const populatedCart = await Cart.findById(newCart._id)
-        .populate('items.advert')
-        .populate('user', '-password -otp');
+      .populate('items.advert')
+      .populate('user', '-password -otp')
+      .exec();
 
       const { itemCount, totalAmount } = calculateCartSummary(populatedCart);
       populatedCart.totalAmount = totalAmount;
-
       await populatedCart.save();
 
+      // add the new cart into the user's cart field
+      await User.findByIdAndUpdate(userId, {
+        $push: { cart:new mongoose.Types.ObjectId(populatedCart._id) },
+      });
       return res.status(201).json({
         message: 'Cart created successfully',
         cart: populatedCart,
         itemCount,
-        totalAmount
+        totalAmount:totalAmount
       });
     }
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: 'User cart is not an array' });
+    }
     console.error(error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message});
   }
 };
+
+
 
 export const updateCartItem = async (req, res) => {
   try {
@@ -135,6 +134,7 @@ export const updateCartItem = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 export const deleteCartItem = async (req, res) => {
   try {
     const { cartId } = req.params;
@@ -219,12 +219,15 @@ export const getAllCarts = async (req, res) => {
   }
 };
 
-
 export const getUserCart = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const cart = await Cart.findOne({ user: userId })
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const cart = await Cart.find({ user: userId })
       .populate('items.advert')
       .populate('user', '-password -otp');
 
@@ -232,16 +235,23 @@ export const getUserCart = async (req, res) => {
       return res.status(404).json({ message: 'Cart not found for this user' });
     }
 
+    const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+
     res.status(200).json({
       message: 'Cart retrieved successfully',
-      cart,
-      itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0),
-      totalAmount: cart.totalAmount
+      cart: {
+        ...cart.toJSON(),
+        itemCount,
+      },
     });
   } catch (error) {
+    console.error(error); // Log the error for debugging purposes
     res.status(500).json({ message: error.message });
   }
 };
+
+
+
 
 
 

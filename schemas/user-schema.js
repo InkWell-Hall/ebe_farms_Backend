@@ -6,7 +6,9 @@ export const userSchema = Joi.object({
     email: Joi.string().required(),
     password: Joi.string().required(),
     phoneNumber: Joi.string().required(),
-    wallet: Joi.number().default(0)
+    wallet: Joi.number().default(0),
+    cart: Joi.array().items(Joi.string().trim())
+
 });
 
 export const adminSchema = Joi.object({

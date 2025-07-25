@@ -21,7 +21,7 @@ export const userModel = new Schema({
     },
     wallet: {
         type: Number,
-        default:(0)
+        default: (0)
     },
     adminCode: {
         type: String,
@@ -38,15 +38,9 @@ export const userModel = new Schema({
     },
     cart: [
         {
-            _id: { 
-                type: Schema.Types.ObjectId, 
-                auto: true }, // ensure _id is present
-            item: {
-                type: Schema.Types.ObjectId,
-                 ref: 'Advert' },
-            quantity: { 
-                type: Number, 
-                required: true }
+            type: Schema.Types.ObjectId,
+            ref: 'Cart'
+
         }
     ]
 
